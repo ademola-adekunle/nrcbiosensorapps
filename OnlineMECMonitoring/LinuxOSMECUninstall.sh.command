@@ -4,7 +4,7 @@
 cd $HOME
 cd ../..
 cd usr/share
-sudo rm -r "Version2"
+sudo rm -r "OnlineMECMonitoring"
 
 
 #Removing Start Menu option
