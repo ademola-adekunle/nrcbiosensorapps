@@ -1,0 +1,38 @@
+import koradserial #import this module to use
+
+ps1 = KoradSerial('/dev/ttyACM0')  #assign the serial id to a variable
+
+
+ps1.over_voltage_protection.on() # how to turn on OVP on or off (Change to current to help)
+ps1.over_voltage_protection.off()
+
+
+ps1.beep.on() #beep on or off
+ps1.beef.off()
+
+ps1.channels[0].output_current #retrive actual current output from PS, channel 1 denoted as [0] index
+ps1.channels[0].output_voltage #retrive actual output voltage from PS, same as above
+
+
+ps1.channels[0].voltage = 1.5  #how to change voltage in channel 1 to 1.5
+ps1.channels[0].current =  0.2  #sets current to....
+#whenever the current/voltage is set, the PS output goes off. You need to run the following code
+ps1.output.on()
+
+#if there are no number asssigned to the .current call, the value returns the set values
+ps1.channels[0].voltage #returns the currently set voltage. THis does not mean the PS is doing this
+ps1.channels[0].current #returns the currently set current
+
+
+#IMPORTANT NOTE #MAKE CHANGE IN GUI
+#there is no functionality to set cv/cv off, once you set either current or voltage as well as the OCP/OVP the mode alternates automatically
+#what needs to be done is read the status of the PS to know if it is CV or CC using the following command
+ps1.status.channel1  #this returns the mode of channel as either CONSTANT VOLTAGE  or CCONSTANT CURRENT
+
+
+ps1.output.off()  #when you need to turn the PS output off.
+
+ps1.is_open #checks if the port is connected. Caution, will detect any serial, not specific to KORAD
+
+#RECOMMENDED
+ps1.close() #when the program is exited, that is the GUI closed
