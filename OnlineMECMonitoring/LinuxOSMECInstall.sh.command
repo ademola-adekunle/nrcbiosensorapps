@@ -14,13 +14,14 @@ sudo apt-get install rpm -y
 sudo apt-get install libusb-1.0 -y
 sudo apt-get install libqt5serialport5-dev -y
 sudo apt-get install python3-pyqt5.qtserialport -y
-sudo apt-get install python3-pandas -y
 sudo apt-get install python3-matplotlib -y
-sudo apt-get install python3-numpy -
 sudo apt-get install python3-smbus
+sudo apt-get install python3-numpy
+sudo apt-get install python3-pandas
 sudo apt-get install i2c-tools
 sudo pip3 install atlas-i2c
 sudo pip3 install qtwidgets
+
 
 #Modifying Raspi-config for i2c
 sudo cat /boot/cmdline.txt
@@ -29,11 +30,12 @@ sudo cat /boot/cmdline.txt
 
 #Clone Repository
 cd #HOME
-git clone https://github.com/ademola-adekunle/OnlineMECMonitoring.git
+git clone https://github.com/ademola-adekunle/nrcbiosensorapps
+cd nrcbiosensorapps
 cd OnlineMECMonitoring
 sudo cp -r "Version2" /usr/share
 cd $HOME
-sudo rm -r OnlineMECMonitoring
+sudo rm -r nrcbiosensorapps
 
 sudo chmod +x "/usr/share/Version2/runMECMonitoring.sh"
 
@@ -60,7 +62,7 @@ echo 'Encoding = UTF-8' | sudo tee -a /usr/share/applications/MECMonitoringAppli
 echo 'Name = MEC Monitoring ' | sudo tee -a /usr/share/applications/MECMonitoringApplication.desktop
 echo 'Comment = MEC Monitoring' | sudo tee -a /usr/share/applications/MECMonitoringApplication.desktop
 echo 'Exec = "/usr/share/Version2/runMECMonitoring.sh"' | sudo tee -a /usr/share/applications/MECMonitoringApplication.desktop
-echo 'Icon = /usr/share/Version2/NRCLogo.png' | sudo tee -a /usr/share/applications/MECMonitoringApplication.desktop
+echo 'Icon = /usr/share/Version2/KORAD_PS_DAQ/UI_Files/MECMonitoringIcon.ico' | sudo tee -a /usr/share/applications/MECMonitoringApplication.desktop
 echo 'Terminal = false' | sudo tee -a /usr/share/applications/MECMonitoringApplication.desktop
 
 sudo lxpanelctl restart
