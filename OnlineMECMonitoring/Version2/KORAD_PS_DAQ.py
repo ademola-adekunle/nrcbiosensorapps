@@ -7,7 +7,7 @@
 # Port open, close and flush are carried out by the wrapper module.
 # Computer is automatically locked during remote control. No need to send command to lock.
 # Port is released after a timeout of no command from the shell or once the program reaches EOL.
-# Tested for one power supply as of March 17, 2021.
+# Tested for two power supplies as of April 6th, 2021.
 
 #IMPORTANT FOR I2C DEVICES -> DEVICE ADDRESS -> USE CONFIG PROGRAM IF NECESSARY
 #TEMP_1 (Interior Temperature) : Address == 101
@@ -566,7 +566,7 @@ class AdvSettings(QDialog):
                 ocp_advset = 'off'
             
             INI_write()
-            
+            #Settings saved1 flag
             settingsSaved1 = True
             
             self.close()
@@ -926,8 +926,7 @@ class MainWindow(QMainWindow):
         self.temp2Plot = []
         self.pHx = []
         self.pHPlot = []
-        self.counterCheck = data_points_int
-        self.counter = 0
+        
         self.graphArea = self.findChild(QScrollArea, 'graphingArea')
         
         #Create a scrollable graph area content storage area and intialize empty plots there
@@ -1004,28 +1003,36 @@ class MainWindow(QMainWindow):
     def update_StatusBar(self, status1, connected1, status2, connected2):
         if connected1 == True:
             self.ps1StatusConnection.setStyleSheet("border:0 ; color: green; font:italic;")
-            self.ps1StatusConnection.setText("Connected: " + str(connected1))
+            self.ps1StatusConnection.setText("Connected")
+            
+            if status1 == "on":
+                self.ps1StatusOutput.setText("Output: " + status1)
+                self.ps1StatusOutput.setStyleSheet("border:0 ; color: green; font:italic;")
+            else:
+                self.ps1StatusOutput.setText("Output: " + status1)
+                self.ps1StatusOutput.setStyleSheet("border:0 ; color: red; font:italic;")
+            
         else:
             self.ps1StatusConnection.setStyleSheet("border:0 ; color: red; font:italic;")
-            self.ps1StatusConnection.setText("Connected: " + str(connected1))
-        if status1 == "on":
-            self.ps1StatusOutput.setText("Output: " + status1)
-            self.ps1StatusOutput.setStyleSheet("border:0 ; color: green; font:italic;")
-        else:
-            self.ps1StatusOutput.setText("Output: " + status1)
+            self.ps1StatusConnection.setText("Not connected")
+            self.ps1StatusOutput.setText("Output: off")
             self.ps1StatusOutput.setStyleSheet("border:0 ; color: red; font:italic;")
         
         if connected2 == True:
             self.ps2StatusConnection.setStyleSheet("border:0 ; color: green; font:italic;")
-            self.ps2StatusConnection.setText("Connected: " + str(connected2))
+            self.ps2StatusConnection.setText("Connected")
+            
+            if status2 == "on":
+                self.ps2StatusOutput.setText("Output: " + status2)
+                self.ps2StatusOutput.setStyleSheet("border:0 ; color: green; font:italic;")
+            else:
+                self.ps2StatusOutput.setText("Output: " + status2)
+                self.ps2StatusOutput.setStyleSheet("border:0 ; color: red; font:italic;")
+            
         else:
             self.ps2StatusConnection.setStyleSheet("border:0 ; color: red; font:italic;")
-            self.ps2StatusConnection.setText("Connected: " + str(connected2))
-        if status2 == "on":
-            self.ps2StatusOutput.setText("Output: " + status2)
-            self.ps2StatusOutput.setStyleSheet("border:0 ; color: green; font:italic;")
-        else:
-            self.ps2StatusOutput.setText("Output: " + status2)
+            self.ps2StatusConnection.setText("Not connected")
+            self.ps2StatusOutput.setText("Output: off")
             self.ps2StatusOutput.setStyleSheet("border:0 ; color: red; font:italic;")
             
     @QtCore.pyqtSlot(str)
@@ -1095,6 +1102,12 @@ class MainWindow(QMainWindow):
         while True:
             device_list = get_devices() #Finds I2C devices
             
+            """
+            Checking for KoradSerial Compatible ports below based on list of serial ports
+            If found -> set to dev1 or dev2 respectively
+            Then append dev1 and/or dev2 to korad ports
+            Write new information to INI file
+            """
             koradports = []
             check = True
             for i in range (len(serial_ports)): #Check all serial ports for Korad compatible ports#
@@ -1113,7 +1126,7 @@ class MainWindow(QMainWindow):
                             PS_writeDevice(1)
                         except Exception:
                             dev1 = ''
-
+                    # set to dev2 if dev2 is empty and address is not equal to dev1
                     if dev2 == '' and not (dev1 == serial_ports[i]):
                         dev2 = serial_ports[i]
                         try:
@@ -1128,13 +1141,16 @@ class MainWindow(QMainWindow):
                 koradports.append(dev2)
                 
             INI_write()
-                
+            
+            """
+            Power source checking -> If dev1 exists -> try to communicate -> if failed -> dev1 does not exist
+            Same thing for dev2
+            """
             if not dev1 == '':
                 try:
                     tempPS = KoradSerial(dev1)
                     psCurrentOut = tempPS.channels[0].output_current * 1000
                 except Exception:
-                    #print("1 out")
                     dev1 = ''
                     
             if not dev2 =='':
@@ -1142,14 +1158,23 @@ class MainWindow(QMainWindow):
                     tempPS = KoradSerial(dev2)
                     psCurrentOut = tempPS.channels[0].output_current * 1000
                 except Exception:
-                    #print("2 out")
                     dev2 = ''
-                        
+            
+            """
+            If dev1 and dev2 do not exist -> psAval = False, otherwise true
+            """
             if dev1 == '' and dev2 == '':
                 psAval = False
             else:
                 psAval = True
-                
+            
+            """
+            Power source output on or off
+            if dev1 exists and output variable is on -> turn on, else turn off
+                -> If turning on or off command works -> Flag1 = true, else Flag1 = False
+            if dev2 exists and output variable is on -> turn on, else turn off
+                -> If turning on or off command works -> Flag2 = true, else Flag2 = False
+            """
             if not (dev1 == ''):
                 flag1 = True
                 try:
@@ -1176,6 +1201,16 @@ class MainWindow(QMainWindow):
             else:
                 flag2 = False
             
+            """
+            Writing new settings to device and enabling buttons for power source
+            If flag1 is true, enabled all the settings button
+                If settingsflag1 has been changed to true -> set voltageDisplay to psVoltage
+                Write new settings to Powersource 1
+                turn flag to false
+            Else: Keep the buttons disabled
+            
+            Same logic for power source 2
+            """
             if flag1 == True:
                 self.settingsEditButton.setEnabled(True)
                 self.settingsOKButton.setEnabled(True)
@@ -1206,8 +1241,24 @@ class MainWindow(QMainWindow):
                 self.settingsOKButton2.setEnabled(False)
                 self.advsetButton2.setEnabled(False)
                 
+            """
+            If start acquisition flag is triggered -> Start acquisition process
+            """
             if startAcquisition == True:
                 self.startButton.setEnabled(False)
+                
+                """
+                If flag 1 is false -> setText to not connected
+                else:
+                    if output is on -> find current and voltage
+                        if current or voltage is none -> failed reading is triggered
+                        else -> set text to voltage and current
+                        
+                        if exception was raised -> set text to ("--")
+                    if output is off -> set text to ("Output off")
+                
+                Same logic applies for flag 2 with dev2
+                """
                 if flag1 == False:
                     self.currentDisplay.setText("Not connected")
                     self.voltageDisplay.setText("Not connected")
@@ -1228,8 +1279,7 @@ class MainWindow(QMainWindow):
                     else:
                         self.currentDisplay.setText('Output off')
                         self.voltageDisplay.setText('Output off')
-                    
-                    
+            
                 if flag2 == False:
                     self.currentDisplay2.setText("Not connected")
                     self.voltageDisplay2.setText("Not connected")
@@ -1250,34 +1300,46 @@ class MainWindow(QMainWindow):
                     else:
                         self.currentDisplay2.setText('Output off')
                         self.voltageDisplay2.setText('Output off')
-
+                
+                #Polling I2C data function
                 self.pollingStart()
-                #if not (dev1 == '') and not (self.currentDisplay.text() == "Not connected" or self.currentDisplay.text() == "--" or self.currentDisplay.text() == "Output off"):
+                
+                #Updating plot vars -> If displays are values -> append to plot, else append None
                 if not (self.currentDisplay.text() == "Not connected" or self.currentDisplay.text() == "--" or self.currentDisplay.text() == "Output off"):
                     self.y2plot.append(float(self.currentDisplay.text()))
                     self.y1plot.append(float(self.voltageDisplay.text()))
                 else:
-                    self.y2plot.append(None) # * 1000 for A to mA
+                    self.y2plot.append(None)
                     self.y1plot.append(None)
-                #if not (dev2 == '') and not (self.currentDisplay2.text() == "Not connected" or self.currentDisplay2.text() == "--" or self.currentDisplay2.text() == "Output off"):
+                    
                 if not (self.currentDisplay2.text() == "Not connected" or self.currentDisplay2.text() == "--" or self.currentDisplay2.text() == "Output off"):
                     self.y4plot.append(float(self.currentDisplay2.text()))
                     self.y3plot.append(float(self.voltageDisplay2.text()))
                 else:
-                    self.y4plot.append(None) # * 1000 for A to mA
+                    self.y4plot.append(None) 
                     self.y3plot.append(None)
                     
                 time.sleep(0.2)
-                self.check_plot_vars() 
+                
+                #Update i2c plot vars and modify sizes of y-values
+                self.check_plot_vars()
+                #Update plot function
                 self.update_plot()
+                
+                #Set flag to false and enabled startButton
                 startAcquisition = False
                 self.startButton.setEnabled(True)
 
-                
+            #If startLogs flag is triggered -> Begin writing telem data (flag is then set to false)
             if startLogs == True:
                 self.write_telem()
                 startLogs = False
             
+            #If flag1 is false -> Disable buttons and emit signal to change PS1 status
+            #else -> enable buttons and emit signal to change PS1 status to connected
+                #-> if text is not connected and output is true -> set to '--'
+                #-> if output is off -> set to 'output off'
+                #-> if text is not connected or output off and output is true -> set to '--'
             if flag1 == False:
                 self.currentDisplay.setText("Not connected")
                 self.voltageDisplay.setText("Not connected")
@@ -1300,7 +1362,12 @@ class MainWindow(QMainWindow):
                 elif(self.currentDisplay.text() == "Not connected"  or self.currentDisplay.text() == 'Output off') and ps_outputStatus1:
                     self.currentDisplay.setText('--')
                     self.voltageDisplay.setText('--')
-                    
+            
+            #If flag2 is false -> Disable buttons and emit signal to change PS2 status
+            #else -> enable buttons and emit signal to change PS2 status to connected
+                #-> if text is not connected and output is true -> set to '--'
+                #-> if output is off -> set to 'output off'
+                #-> if text is not connected or output off and output is true -> set to '--'
             if flag2 == False:
                 self.currentDisplay2.setText("Not connected")
                 self.voltageDisplay2.setText("Not connected")
@@ -1323,7 +1390,9 @@ class MainWindow(QMainWindow):
                 elif(self.currentDisplay2.text() == "Not connected"  or self.currentDisplay2.text() == 'Output off') and ps_outputStatus2:
                     self.currentDisplay2.setText('--')
                     self.voltageDisplay2.setText('--')
-                    
+            
+            #If outputStatus1 is on -> ps1stat = on, else off
+            #If outputStatus2 is on -> ps2stat = on, else off
             ps1stat = ''
             ps2stat = ''
             if ps_outputStatus1:
@@ -1334,11 +1403,13 @@ class MainWindow(QMainWindow):
                 ps2stat = 'on'
             else:
                 ps2stat = 'off'
-                
+            #Emit signal to modify status bar
             self.update_statusBarSignal.emit(ps1stat, flag1, ps2stat, flag2)
-                    
+            
+            #If endThread is triggered -> set threadEnded to True
             if endThread:
                 threadEnded = True
+                
             time.sleep(1)
             
     def write_telem(self):
@@ -1506,6 +1577,7 @@ class MainWindow(QMainWindow):
             psVoltage2 = float(self.setvoltageDisplay2.text())
             INI_write()
             
+            #Settings saved flag
             settingsSaved2 = True
 
     def on_advset_button_clicked2(self):
@@ -1561,7 +1633,6 @@ class MainWindow(QMainWindow):
         self.y1plot = self.y1plot[-data_points_int:]
         self.y2plot = self.y2plot[-data_points_int:]
         
-        #print(len(self.y1plot))
         self.y3plot = self.y3plot[-data_points_int:]
         self.y4plot = self.y4plot[-data_points_int:]
         
@@ -1597,13 +1668,9 @@ class MainWindow(QMainWindow):
         if self.startButton.isChecked() == True:
 
             if psAval == False:
-                #check = QMessageBox.question(self, 'No KORAD device detected', 'Would you like to continue polling for pH and internal/external temperature?', QMessageBox.Yes | QMessageBox.No)
-                #check = autoContinueMessageBox.showWithTimeout(5,'Would you like to continue polling for pH and internal/external temperature?' , 'No KORAD device detected', icon = QMessageBox.Question)
-                #print(check)
                 wait = NoKoradDetected(self)
                 wait.exec_()
                 
-                #if check == QMessageBox.Yes:
                 if autoContinueorSelection == True:
                     polling = True
                     dAqOn = True
@@ -1624,8 +1691,6 @@ class MainWindow(QMainWindow):
                     self.temp2Plot = []
                     self.pHx = []
                     self.pHPlot = []
-                    self.counterCheck = data_points_int
-                    self.counter = 0
                     
                     self.startButton.setChecked(True)
                     self.timer_start()
@@ -1662,10 +1727,7 @@ class MainWindow(QMainWindow):
                 self.temp2Plot = []
                 self.pHx = []
                 self.pHPlot = []
-                self.counterCheck = data_points_int
-                self.counter = 0
                 
-                #self.runPolling()
                 INI_write() # to update dAqON and runPS bools in INI
 
                 self.timer_start()
@@ -1759,8 +1821,6 @@ class MainWindow(QMainWindow):
             self.start_time = time.monotonic()
             self.first_timer_start = False # so any future timer_start calls will not assign a start_time
         
-        #self.pollingStart()
-        #self.get_telem() # retrieves the telemetry from the power source
         startAcquisition = True
         startLogs = True
         self.dlog_time_left_int = int(dLogInterval * 60)  # * 60 seconds -> minutes
@@ -1784,9 +1844,6 @@ class MainWindow(QMainWindow):
             self.daq_time_left_int = int(dAqInterval * 60)# * 60 minutes -> seconds
             startAcquisition = True
 
-
-            #time.sleep(1) # 1 sec delay
-        
         self.update_timer_display()
         self.update_acquisitionTimer_display()
 
@@ -1800,31 +1857,20 @@ class MainWindow(QMainWindow):
     def update_plot(self):
         global data_points_int, y1_label, y2_label, dev1, dev2, data_points_int
         
-        #self.counterCheck = data_points_int
-        #self.counter = 0
-        
         tchart = datetime.datetime.now()
         
-        #if not (self.currentDisplay.text() == "Not connected") or not (len(self.y1plot) == len(self.xplot)) or not(len(self.y2plot) == len(self.xplot)) :
-        #if not (self.currentDisplay.text() == "Not connected" or self.currentDisplay.text() == "--" or self.currentDisplay.text() == "Output off") or not (len(self.y1plot) == len(self.xplot)):
         self.xplot.append(tchart)
         self.xplot = self.xplot[-data_points_int:]
-        #print(len(self.xplot))
-        #print(self.xplot)
             
-        #if not (self.currentDisplay2.text() == "Not connected" or self.currentDisplay2.text() == "--" or self.currentDisplay2.text() == "Output off") or not (len(self.y3plot) == len(self.xplot2)):
         self.xplot2.append(tchart)
         self.xplot2 = self.xplot2[-data_points_int:]
         
-        #if not (self.tempDisplay1.text() == "No probe connected" or self.tempDisplay1.text() == "Not configured"):
         self.temp1x.append(tchart)
         self.temp1x = self.temp1x[-data_points_int:]
         
-        #if not (self.tempDisplay2.text() == "No probe connected" or self.tempDisplay2.text() == "Not configured"):
         self.temp2x.append(tchart)
         self.temp2x = self.temp2x[-data_points_int:]
             
-        #if not (self.pHDisplay.text() == "No probe connected" or self.pHDisplay.text() == "Not configured"):
         self.pHx.append(tchart)
         self.pHx = self.pHx[-data_points_int:]
         
