@@ -1918,7 +1918,7 @@ class MainWindow(QMainWindow):
         self.axes2.plot(*splitSerToArr(temp2Line.dropna()),'g', label = 'Temp$_{ext}$', linestyle ='dashed', marker = "v")
         self.axes2.tick_params(axis='y', labelcolor = 'tab:green')
         plt.setp(self.graph2.axes.get_xticklabels(), rotation = 30, horizontalalignment = 'right')
-        self.graph2.fig.legend(loc = 'upper right', bbox_to_anchor =(1.4,1.2), fancybox = True, shadow = True, ncol = 1, bbox_transform = self.graph2.axes.transAxes)
+        self.graph2.fig.legend(loc = 'upper right', bbox_to_anchor =(1.3,1.2), fancybox = True, shadow = True, ncol = 1, bbox_transform = self.graph2.axes.transAxes)
         
 
         self.graph3.axes.cla()
