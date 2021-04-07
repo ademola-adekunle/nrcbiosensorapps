@@ -385,7 +385,7 @@ class ON_OFFSwitch(QtWidgets.QPushButton):
     def __init__(self, parent = None):
         super().__init__(parent)
         self.setCheckable(True)
-        self.setMinimumWidth(100)
+        self.setMinimumWidth(120)
         self.setMinimumHeight(22)
 
     def paintEvent(self, event):
@@ -393,7 +393,7 @@ class ON_OFFSwitch(QtWidgets.QPushButton):
         bg_color = Qt.green if self.isChecked() else Qt.red
 
         radius = 10
-        width = 50
+        width = 60
         center = self.rect().center()
 
         painter = QtGui.QPainter(self)
@@ -431,9 +431,9 @@ class AdvSettings(QDialog):
         self.setWindowTitle(u"Advanced PS 1 Settings")
         
         #Sets displays to responding ini file params
-        self.setvoltageDisplay.setText(str(psVoltage))
-        self.maxvoltageDisplay.setText(str(psVoltageMax))
-        self.maxcurrentDisplay.setText(str(psCurrentMax))
+        self.setvoltageDisplay.setValue((psVoltage))
+        self.maxvoltageDisplay.setValue((psVoltageMax))
+        self.maxcurrentDisplay.setValue((psCurrentMax))
         
         #Sets bg to gray
         self.setvoltageDisplay.setStyleSheet('background-color: lightgray')
@@ -497,22 +497,16 @@ class AdvSettings(QDialog):
         global is_editing_setvals 
         is_editing_setvals = True #Set editing to true
 
-        displayfont = self.setvoltageDisplay.font()
-        displayfont.setPointSize(10)
-        
         #Enable switch and clean stylesheet
         self.on_off.setEnabled(True)
         self.on_off.setStyleSheet("")
         
         self.setvoltageDisplay.setReadOnly(False)
         self.setvoltageDisplay.setStyleSheet("background-color: white")
-        self.setvoltageDisplay.setFont(displayfont)
         self.maxvoltageDisplay.setReadOnly(False)
         self.maxvoltageDisplay.setStyleSheet("background-color: white")
-        self.maxvoltageDisplay.setFont(displayfont)
         self.maxcurrentDisplay.setReadOnly(False)
         self.maxcurrentDisplay.setStyleSheet("background-color: white")
-        self.maxcurrentDisplay.setFont(displayfont)
         
         if ovp_advset == 'on':
             self.ovpCheckBox.setEnabled(True)
@@ -527,31 +521,23 @@ class AdvSettings(QDialog):
 
         if is_editing_setvals == False:
             pass
-        elif float(self.setvoltageDisplay.text()) > float(psVoltageMax):
+        elif float(self.setvoltageDisplay.value()) > float(self.maxvoltageDisplay.value()):
             error = QMessageBox.warning(self, 'Max voltage less than set voltage', 'Error: The set voltage must not be greater than the max voltage!')
         else:
             is_editing_setvals = False
 
-            displayfont = self.setvoltageDisplay.font()
-            displayfont.setPointSize(10)
-
             self.setvoltageDisplay.setReadOnly(True)
             self.setvoltageDisplay.setStyleSheet("background-color: lightgray")
-            self.setvoltageDisplay.setFont(displayfont)
-            
-            self.on_off.setEnabled(False)
-            
             self.maxvoltageDisplay.setReadOnly(True)
             self.maxvoltageDisplay.setStyleSheet("background-color: lightgray")
-            self.maxvoltageDisplay.setFont(displayfont)
             self.maxcurrentDisplay.setReadOnly(True)
             self.maxcurrentDisplay.setStyleSheet("background-color: lightgray")
-            self.maxcurrentDisplay.setFont(displayfont)
+            self.on_off.setEnabled(False)
             
             ps_outputStatus1 = self.temp
-            psVoltage = float(self.setvoltageDisplay.text())
-            psVoltageMax = float(self.maxvoltageDisplay.text())
-            psCurrentMax = float(self.maxcurrentDisplay.text())
+            psVoltage = float(self.setvoltageDisplay.value())
+            psVoltageMax = float(self.maxvoltageDisplay.value())
+            psCurrentMax = float(self.maxcurrentDisplay.value())
             
             if self.ovpCheckBox.isChecked() == True:
                 ovp_advset = 'on'
@@ -581,9 +567,9 @@ class AdvSettings2(QDialog):
         self.setWindowTitle(u"Advanced PS 2 Settings")
         
         #Sets displays to responding ini file params
-        self.setvoltageDisplay.setText(str(psVoltage2))
-        self.maxvoltageDisplay.setText(str(psVoltageMax2))
-        self.maxcurrentDisplay.setText(str(psCurrentMax2))
+        self.setvoltageDisplay.setValue((psVoltage2))
+        self.maxvoltageDisplay.setValue((psVoltageMax2))
+        self.maxcurrentDisplay.setValue((psCurrentMax2))
         
         #Sets displays backgrounds to respective colors
         self.setvoltageDisplay.setStyleSheet('background-color: lightgray')
@@ -592,7 +578,7 @@ class AdvSettings2(QDialog):
         
         #Initialize custom on_off switch -> If outputStatus is true -> set checked to true, otherwise false
         self.on_off = ON_OFFSwitch()
-        if ps_outputStatus1:
+        if ps_outputStatus2:
             self.on_off.setChecked(True)
             self.temp = True
         else:
@@ -626,7 +612,6 @@ class AdvSettings2(QDialog):
         if self.ovpCheckBox.isChecked() == True:
             self.ocpCheckBox.setChecked(False)
             self.ocpCheckBox.setEnabled(False)
-
         else:
             self.ocpCheckBox.setEnabled(True)
 
@@ -634,7 +619,6 @@ class AdvSettings2(QDialog):
         if self.ocpCheckBox.isChecked() == True:
             self.ovpCheckBox.setChecked(False)
             self.ovpCheckBox.setEnabled(False)
-
         else:
             self.ovpCheckBox.setEnabled(True)
 
@@ -642,21 +626,15 @@ class AdvSettings2(QDialog):
         global is_editing_setvals2 
         is_editing_setvals2 = True
 
-        displayfont = self.setvoltageDisplay.font()
-        displayfont.setPointSize(10)
-        
         self.on_off.setEnabled(True)
         self.on_off.setStyleSheet("")
         
         self.setvoltageDisplay.setReadOnly(False)
         self.setvoltageDisplay.setStyleSheet("background-color: white")
-        self.setvoltageDisplay.setFont(displayfont)
         self.maxvoltageDisplay.setReadOnly(False)
         self.maxvoltageDisplay.setStyleSheet("background-color: white")
-        self.maxvoltageDisplay.setFont(displayfont)
         self.maxcurrentDisplay.setReadOnly(False)
         self.maxcurrentDisplay.setStyleSheet("background-color: white")
-        self.maxcurrentDisplay.setFont(displayfont)
         
         if ovp_advset2 == 'on':
             self.ovpCheckBox.setEnabled(True)
@@ -671,28 +649,22 @@ class AdvSettings2(QDialog):
 
         if is_editing_setvals2 == False:
             pass
-        elif float(self.setvoltageDisplay.text()) > float(psVoltageMax2):
+        elif float(self.setvoltageDisplay.value()) > float(self.maxvoltageDisplay.value()):
             error = QMessageBox.warning(self, 'Max voltage less than set voltage', 'Error: The set voltage must not be greater than the max voltage!')
         else:
             is_editing_setvals2 = False
 
-            displayfont = self.setvoltageDisplay.font()
-            displayfont.setPointSize(10)
-
             self.setvoltageDisplay.setReadOnly(True)
             self.setvoltageDisplay.setStyleSheet("background-color: lightgray")
-            self.setvoltageDisplay.setFont(displayfont)
-            
             self.maxvoltageDisplay.setReadOnly(True)
             self.maxvoltageDisplay.setStyleSheet("background-color: lightgray")
-            self.maxvoltageDisplay.setFont(displayfont)
             self.maxcurrentDisplay.setReadOnly(True)
             self.maxcurrentDisplay.setStyleSheet("background-color: lightgray")
-            self.maxcurrentDisplay.setFont(displayfont)
-            
-            psVoltage2 = float(self.setvoltageDisplay.text())
-            psVoltageMax2 = float(self.maxvoltageDisplay.text())
-            psCurrentMax2 = float(self.maxcurrentDisplay.text())
+            self.on_off.setEnabled(False)
+
+            psVoltage2 = float(self.setvoltageDisplay.value())
+            psVoltageMax2 = float(self.maxvoltageDisplay.value())
+            psCurrentMax2 = float(self.maxcurrentDisplay.value())
             
             if self.ovpCheckBox.isChecked() == True:
                 ovp_advset2 = 'on'
@@ -1411,13 +1383,18 @@ class MainWindow(QMainWindow):
                 threadEnded = True
                 
             time.sleep(1)
-            
+    
+    """
+    Save current acquisition data to logs
+    """
     def write_telem(self):
         global dev1, dev2
         global ps_outputStatus1, ps_outputStatus2
         date = str(datetime.datetime.now())[:19]
-        # needs all data, including temperature and pH
         
+        """
+        Start with dev1 -> Test if KoradSerial -> set flag1 to false if false
+        """
         flag1 = True
         
         try:
@@ -1425,7 +1402,10 @@ class MainWindow(QMainWindow):
             psCurrentOut1 = PS1.channels[0].output_current * 1000
         except Exception:
             flag1 = False
-            
+        
+        """
+        If dev1 is KoradSerial -> test channel outputs -> If failed -> reading = -- 
+        """
         if flag1 == True:
             if ps_outputStatus1:
                 try:
@@ -1444,7 +1424,11 @@ class MainWindow(QMainWindow):
         else:
             psV = '--'
             psC = '--'
-            
+        
+        
+        """
+        Start with dev2 -> Test if KoradSerial -> set flag2 to false if false
+        """
         flag2 = True
         
         try:
@@ -1452,7 +1436,10 @@ class MainWindow(QMainWindow):
             psCurrentOut2 = PS2.channels[0].output_current * 1000
         except Exception:
             flag2 = False
-            
+        
+        """
+        If dev2 is KoradSerial -> test channel outputs -> If failed -> reading = -- 
+        """
         if flag2 == True:
             if ps_outputStatus2:
                 try:
@@ -1470,7 +1457,8 @@ class MainWindow(QMainWindow):
         else:
             psV2 = '--'
             psC2 = '--'
-            
+        
+        #Depending on Polling display text -> set entries to respective value or '--'
         if (self.tempDisplay1.text()) == "No probe connected" or self.tempDisplay1.text() == "Not configured":
             temp1_text = '--'
         else:
@@ -1486,10 +1474,11 @@ class MainWindow(QMainWindow):
         else:
             pH_text = self.pHDisplay.text()
             
-        
+        #Append data 
         data = [str(date),str(psV),str(psC),str(psV2),str(psC2),temp1_text,temp2_text,pH_text]
         data = ' '.join(data)
-
+        
+        #Write to log
         log = get_datalog()
         log.write(data + '\n') # write data to file
         log.close()
@@ -1507,25 +1496,33 @@ class MainWindow(QMainWindow):
 
     def on_setOK_button_clicked(self):
         global is_editing_setvals, runPS, dAqFlag, psVoltage, psVoltageMax, psCurrentMax, settingsSaved1 
+        
+        try:
+            if is_editing_setvals == False:
+                pass
+            elif float(self.setvoltageDisplay.text()) < 0.01:
+                error = QMessageBox.warning(self, "Error!", "The set voltage must be greater than 0 (At least 10mV)")
+            elif float(self.setvoltageDisplay.text()) > float(psVoltageMax):
+                error = QMessageBox.warning(self, "Error!", "The set voltage must not be greater than the max voltage.")
+            else:
+                is_editing_setvals = False
 
-        if is_editing_setvals == False:
-            pass
-        elif float(self.setvoltageDisplay.text()) > float(psVoltageMax):
-            error = QMessageBox.warning(self, "Error!", "The set voltage must not be greater than the max voltage.")
-        else:
-            is_editing_setvals = False
+                displayfont = self.setvoltageDisplay.font()
+                displayfont.setPointSize(10)
 
-            displayfont = self.setvoltageDisplay.font()
-            displayfont.setPointSize(10)
+                self.setvoltageDisplay.setReadOnly(True)
+                self.setvoltageDisplay.setStyleSheet("background-color: lightgray; font-weight: normal")
+                self.setvoltageDisplay.setFont(displayfont)
 
-            self.setvoltageDisplay.setReadOnly(True)
-            self.setvoltageDisplay.setStyleSheet("background-color: lightgray; font-weight: normal")
-            self.setvoltageDisplay.setFont(displayfont)
+                psVoltage = float(self.setvoltageDisplay.text())
+                INI_write()
+                
+                settingsSaved1 = True
+                
+        except ValueError:
+            error = QMessageBox.warning(self, "Value Error!", "Please enter an appropriate value in the set voltage section!")
+            self.setvoltageDisplay.setText(str(psVoltage))
 
-            psVoltage = float(self.setvoltageDisplay.text())
-            INI_write()
-            
-            settingsSaved1 = True
 
     def on_advset_button_clicked(self):
         global ps, ocp_advset, ovp_advset
@@ -1550,36 +1547,36 @@ class MainWindow(QMainWindow):
         global is_editing_setvals2
         is_editing_setvals2 = True
 
-        displayfont = self.setvoltageDisplay.font()
-        displayfont.setPointSize(10)
-
         self.setvoltageDisplay2.setReadOnly(False)
         self.setvoltageDisplay2.setStyleSheet("background-color: white;font-weight: normal")
-        self.setvoltageDisplay2.setFont(displayfont)
 
     def on_setOK_button_clicked2(self):
         global is_editing_setvals2, runPS, dAqFlag, psVoltage2, psVoltageMax2, psCurrentMax2, settingsSaved2 
+        
+        try:
+            if is_editing_setvals2 == False:
+                pass
+            elif float(self.setvoltageDisplay2.text()) < 0.01:
+                    error = QMessageBox.warning(self, "Error!", "The set voltage must be greater than 0 (At least 10mV)")
+            elif float(self.setvoltageDisplay2.text()) > float(psVoltageMax2):
+                error = QMessageBox.warning(self, "Error!", "The set voltage must not be greater than the max voltage.")
+            else:
+                is_editing_setvals2 = False
 
-        if is_editing_setvals2 == False:
-            pass
-        elif float(self.setvoltageDisplay.text()) > float(psVoltageMax2):
-            error = QMessageBox.warning(self, "Error!", "The set voltage must not be greater than the max voltage.")
-        else:
-            is_editing_setvals2 = False
+                self.setvoltageDisplay2.setReadOnly(True)
+                self.setvoltageDisplay2.setStyleSheet("background-color: lightgray;font-weight: normal")
 
-            displayfont = self.setvoltageDisplay.font()
-            displayfont.setPointSize(10)
-
-            self.setvoltageDisplay2.setReadOnly(True)
-            self.setvoltageDisplay2.setStyleSheet("background-color: lightgray;font-weight: normal")
-            self.setvoltageDisplay2.setFont(displayfont)
-
-            psVoltage2 = float(self.setvoltageDisplay2.text())
-            INI_write()
+                psVoltage2 = float(self.setvoltageDisplay2.text())
+                INI_write()
+                
+                #Settings saved flag
+                settingsSaved2 = True
+                
+        except ValueError:
+            error = QMessageBox.warning(self, "Value Error!", "Please enter an appropriate value in the set voltage section!")
+            self.setvoltageDisplay2.setText(str(psVoltage2))
             
-            #Settings saved flag
-            settingsSaved2 = True
-
+            
     def on_advset_button_clicked2(self):
         global ps, ocp_advset2, ovp_advset2
         self.AdvSettings2 = AdvSettings2()
@@ -1810,8 +1807,6 @@ class MainWindow(QMainWindow):
                 
         if foundDeviceFlag == False:
             return "Not configured"
-    
-    
         
     def timer_start(self):
         global startAcquisition
@@ -1923,7 +1918,7 @@ class MainWindow(QMainWindow):
         self.axes2.plot(*splitSerToArr(temp2Line.dropna()),'g', label = 'Temp$_{ext}$', linestyle ='dashed', marker = "v")
         self.axes2.tick_params(axis='y', labelcolor = 'tab:green')
         plt.setp(self.graph2.axes.get_xticklabels(), rotation = 30, horizontalalignment = 'right')
-        self.graph2.fig.legend(loc = 'upper right', bbox_to_anchor =(1.3,1.2), fancybox = True, shadow = True, ncol = 1, bbox_transform = self.graph2.axes.transAxes)
+        self.graph2.fig.legend(loc = 'upper right', bbox_to_anchor =(1.4,1.2), fancybox = True, shadow = True, ncol = 1, bbox_transform = self.graph2.axes.transAxes)
         
 
         self.graph3.axes.cla()

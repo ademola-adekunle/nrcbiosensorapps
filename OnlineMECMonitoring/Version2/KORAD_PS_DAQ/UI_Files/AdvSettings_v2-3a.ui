@@ -131,6 +131,30 @@
     </rect>
    </property>
    <layout class="QGridLayout" name="infoLayout">
+    <item row="2" column="2">
+     <widget class="QLabel" name="currentunitLabel">
+      <property name="minimumSize">
+       <size>
+        <width>22</width>
+        <height>0</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>9</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>A</string>
+      </property>
+     </widget>
+    </item>
     <item row="1" column="0">
      <widget class="QLabel" name="label_4">
       <property name="minimumSize">
@@ -145,7 +169,7 @@
        </font>
       </property>
       <property name="toolTip">
-       <string>Set limit on maximum voltage for power source 1</string>
+       <string>Set limit on maximum voltage for power source 1 (Max: 30V)</string>
       </property>
       <property name="text">
        <string>Set Max Voltage (PS 1)</string>
@@ -166,42 +190,10 @@
        </font>
       </property>
       <property name="toolTip">
-       <string>Set max current for power source 1</string>
+       <string>Set max current for power source 1 (Max: 5A)</string>
       </property>
       <property name="text">
        <string>Set Max Current (PS 1)</string>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="1">
-     <widget class="QLineEdit" name="setvoltageDisplay">
-      <property name="maximumSize">
-       <size>
-        <width>16777215</width>
-        <height>25</height>
-       </size>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-      <property name="readOnly">
-       <bool>true</bool>
-      </property>
-     </widget>
-    </item>
-    <item row="1" column="1">
-     <widget class="QLineEdit" name="maxvoltageDisplay">
-      <property name="maximumSize">
-       <size>
-        <width>16777215</width>
-        <height>25</height>
-       </size>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-      <property name="readOnly">
-       <bool>true</bool>
       </property>
      </widget>
     </item>
@@ -219,26 +211,34 @@
        </font>
       </property>
       <property name="toolTip">
-       <string>Set voltage for power source 1</string>
+       <string>Set voltage for power source 1 (Max: 30V)</string>
       </property>
       <property name="text">
        <string>Set Voltage (PS 1)</string>
       </property>
      </widget>
     </item>
-    <item row="2" column="1">
-     <widget class="QLineEdit" name="maxcurrentDisplay">
+    <item row="0" column="2">
+     <widget class="QLabel" name="currentunitLabel_2">
+      <property name="minimumSize">
+       <size>
+        <width>22</width>
+        <height>0</height>
+       </size>
+      </property>
       <property name="maximumSize">
        <size>
         <width>16777215</width>
-        <height>25</height>
+        <height>16777215</height>
        </size>
       </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
+      <property name="font">
+       <font>
+        <pointsize>9</pointsize>
+       </font>
       </property>
-      <property name="readOnly">
-       <bool>true</bool>
+      <property name="text">
+       <string>V</string>
       </property>
      </widget>
     </item>
@@ -260,6 +260,141 @@
       </property>
       <property name="text">
        <string>PS 1 Output </string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="1">
+     <widget class="QDoubleSpinBox" name="setvoltageDisplay">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>25</height>
+       </size>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+      <property name="readOnly">
+       <bool>true</bool>
+      </property>
+      <property name="correctionMode">
+       <enum>QAbstractSpinBox::CorrectToNearestValue</enum>
+      </property>
+      <property name="decimals">
+       <number>2</number>
+      </property>
+      <property name="minimum">
+       <double>0.010000000000000</double>
+      </property>
+      <property name="maximum">
+       <double>30.000000000000000</double>
+      </property>
+      <property name="singleStep">
+       <double>0.001000000000000</double>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="2">
+     <widget class="QLabel" name="currentunitLabel_4">
+      <property name="minimumSize">
+       <size>
+        <width>22</width>
+        <height>0</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>9</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>V</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="1">
+     <widget class="QDoubleSpinBox" name="maxvoltageDisplay">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>25</height>
+       </size>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+      <property name="readOnly">
+       <bool>true</bool>
+      </property>
+      <property name="correctionMode">
+       <enum>QAbstractSpinBox::CorrectToNearestValue</enum>
+      </property>
+      <property name="decimals">
+       <number>2</number>
+      </property>
+      <property name="minimum">
+       <double>0.010000000000000</double>
+      </property>
+      <property name="maximum">
+       <double>30.000000000000000</double>
+      </property>
+      <property name="singleStep">
+       <double>0.010000000000000</double>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="1">
+     <widget class="QDoubleSpinBox" name="maxcurrentDisplay">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>25</height>
+       </size>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+      <property name="readOnly">
+       <bool>true</bool>
+      </property>
+      <property name="correctionMode">
+       <enum>QAbstractSpinBox::CorrectToNearestValue</enum>
+      </property>
+      <property name="decimals">
+       <number>3</number>
+      </property>
+      <property name="minimum">
+       <double>0.001000000000000</double>
+      </property>
+      <property name="maximum">
+       <double>5.000000000000000</double>
+      </property>
+      <property name="singleStep">
+       <double>0.001000000000000</double>
       </property>
      </widget>
     </item>
