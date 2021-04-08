@@ -33,17 +33,18 @@ import numpy as np
 import pandas as pd
 import io
 import re
-import sys
-import fcntl
-import time
 import copy
 import string
-from AtlasI2C import (
-	 AtlasI2C
-)
+import platform
+
+if platform.system() == 'Linux':
+    import fcntl
+    from AtlasI2C import (
+         AtlasI2C
+    )
 
 import matplotlib
-matplotlib.use('QT5Agg',warn=False,force = True)
+matplotlib.use('QT5Agg')
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
@@ -92,15 +93,26 @@ def get_devices(): #Function to find compatible ezo circuit devices via a list o
                 device_list.append(AtlasI2C(address = i, moduletype = moduletype, name = response))
     return device_list
 
+#Define resource path to access external files when using pyinstaller
+def resourcepath(relative_path):
+    #Get absolute path to resource and then appends correct file prefix
+    try:
+        #PYinstaller temp folder
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+        
+    return os.path.join(base_path, relative_path)
+
 def splitSerToArr(ser):
     #From series -> return [series index, series values]
     return [ser.index, ser.values]
 
 def INI_write(): # function to write an INI file
     global psVoltage, psCurrentMax, psVoltageMax, psVoltage2, psCurrentMax2, psVoltageMax2,runPS, dLogInterval, dAqInterval, dAqON, ovp_advset, ocp_advset, ocp_advset2, ovp_advset2, ps_outputStatus1, ps_outputStatus2, koradports, fileName, data_points_int
-    cfgfile = open("INI/psSettings.ini",'w') #INI file creation. I would take this from the final code. This is just for the test
+    cfgfile = open(resourcepath(str(inis) + "/psSettings.ini"),'w') #INI file creation. I would take this from the final code. This is just for the test
     parser = ConfigParser()
-    parser.read("INI/psSettings.ini")
+    parser.read(resourcepath(str(inis) + "/psSettings.ini"))
     
     """
     INI FILE Settings section
@@ -157,7 +169,7 @@ def INI_write(): # function to write an INI file
     parser.add_section('Plot Settings')
     parser.set('Plot Settings', 'number of data points', str(data_points_int))
 
-    with open("INI/psSettings.ini",'w') as configfile:
+    with open(resourcepath(str(inis) + "/psSettings.ini"),'w') as configfile:
         parser.write(configfile)
     configfile.close()
 
@@ -165,7 +177,7 @@ def INI_read(): # function to read an INI file
     global ps, psVoltage, psCurrentMax, psVoltageMax, psVoltage2, psCurrentMax2, psVoltageMax2, runPS, dLogInterval, dAqInterval, dAqON, ocp_advset, ovp_advset, ocp_advset2, ovp_advset2, ps_outputStatus1, ps_outputStatus2, koradports, fileName, data_points_int
     #cfgfile = open("INI/psSettings.ini",'r') #INI file creation. I would take this from the final code. This is just for the test
     parser = ConfigParser()
-    parser.read("INI/psSettings.ini")
+    parser.read(resourcepath(str(inis) + "/psSettings.ini"))
 
     # Acquiring the values from the INI file
     psVoltage = float(parser.get("Settings", 'psVoltage'))
@@ -244,71 +256,99 @@ def PS_writeDevice(channel):
             PS.over_current_protection.off()
 
 def get_datalog():
-    global fileName
+    global fileName, datalogs
 
-    if not os.path.exists("Data_Logs"):
-        os.makedirs("Data_Logs")
+    if not os.path.exists(resourcepath(str(current)+"/KORAD_PS_DAQ/Data_Logs")):
+        os.makedirs(resourcepath(str(current)+"/KORAD_PS_DAQ/Data_Logs"))
+    
+    if platform.system() == "Linux":
+        datalogs = current / "KORAD_PS_DAQ/Data_Logs"
+    elif platform.system() == "Windows":
+        datalogs = "KORAD_PS_DAQ/Data_Logs"
 
-    if not os.path.exists('Data_Logs/%s' %fileName): # For a new file, the headers are added as the first line
-        log = open('Data_Logs/%s' %fileName, "a")
+    if not os.path.exists(resourcepath(str(datalogs) +"/%s" %fileName)): # For a new file, the headers are added as the first line
+        log = open(resourcepath(str(datalogs) +"/%s" %fileName), "a")
         headers = ['Date', 'Vps_1', 'Ips_1', 'Vps_2', 'Ips_2', 'Temp(Interior)', 'Temp(Exterior)', 'pH']
         headers = ' '.join(headers)
         log.write(headers +'\n') # write headers to file
         log.close()
 
-    log = open('Data_Logs/%s' %fileName, "a")
+    log = open(resourcepath(str(datalogs) + "/%s" %fileName), "a")
 
     return log
+
 #------------------------------------------------------------------------------#
 # START-UP ACTIONS
 #------------------------------------------------------------------------------#
 global ports, koradports, ovp_advset, ocp_advset, data_points_int, runPS
-# Creating a folder for the INI file (startup)
-if sys.platform.startswith('win'): # if the operating system is windows
-    if not os.path.exists(r"C:\KORAD_PS_DAQ"): # and there's no directory folder
-        os.makedirs(r"C:\KORAD_PS_DAQ")
 
-    os.chdir(r"C:\KORAD_PS_DAQ")
-
-    if not os.path.exists("INI"):
-        os.makedirs("INI")
-
-    if not os.path.exists("UI_Files"):
-        os.makedirs("UI_Files")
+if platform.system() == "Windows": # if the operating system is windows
+    if not os.path.exists(resourcepath(str(current)+"/KORAD_PS_DAQ")): # and there's no directory folder
+        os.makedirs(resourcepath(str(current) + "/KORAD_PS_DAQ"))
+        
+    if not os.path.exists(resourcepath(str(current)+"/KORAD_PS_DAQ/INI")):
+        os.makedirs(resourcepath(str(current)+"/KORAD_PS_DAQ/INI"))
+        
+    if not os.path.exists(resourcepath(str(current)+"/KORAD_PS_DAQ/INI/psSettings.ini")):
+        psVoltage = 1.4
+        psCurrentMax = 2.0
+        psVoltageMax = 20.0
+        psVoltage2 = 1.4
+        psCurrentMax2 = 2.0
+        psVoltageMax2 = 20.0
+        dLogInterval = 1.0
+        dAqInterval = 1.0
+        runPS = '0'
+        dAqON = '0'
+        fileName = 'DataLoggingFile.txt'
+        ocp_advset = 'off'
+        ovp_advset = 'on'
+        ocp_advset2 = 'off'
+        ovp_advset2 = 'on'
+        ps_outputStatus1 = "0"
+        ps_outputStatus2 = "0"
+        data_points_int = 100
+        INI_write() # makes INI file with these standard initial conditions
+        
+    #GLOBAL FILE LOCATIONS
+    uis = "KORAD_PS_DAQ/UI_Files"
+    inis = "KORAD_PS_DAQ/INI"
+    datalogs = "KORAD_PS_DAQ/Data_Logs"
+    
 
 elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'): # if the operating system is linux
-    if not os.path.exists(str(current)+"/KORAD_PS_DAQ"): # and there's no directory folder
-        os.makedirs(str(current) + "/KORAD_PS_DAQ")
+    if not os.path.exists(resourcepath(str(current)+"/KORAD_PS_DAQ")): # and there's no directory folder
+        os.makedirs(resourcepath(str(current) + "/KORAD_PS_DAQ"))
 
-    os.chdir(str(current)+"/KORAD_PS_DAQ")
+    if not os.path.exists(resourcepath(str(current)+"/KORAD_PS_DAQ/INI")):
+        os.makedirs(resourcepath(str(current)+"/KORAD_PS_DAQ/INI"))
+
+    if not os.path.exists(resourcepath(str(current)+"/KORAD_PS_DAQ/INI/psSettings.ini")):
+        psVoltage = 1.4
+        psCurrentMax = 2.0
+        psVoltageMax = 20.0
+        psVoltage2 = 1.4
+        psCurrentMax2 = 2.0
+        psVoltageMax2 = 20.0
+        dLogInterval = 1.0
+        dAqInterval = 1.0
+        runPS = '0'
+        dAqON = '0'
+        fileName = 'DataLoggingFile.txt'
+        ocp_advset = 'off'
+        ovp_advset = 'on'
+        ocp_advset2 = 'off'
+        ovp_advset2 = 'on'
+        ps_outputStatus1 = "0"
+        ps_outputStatus2 = "0"
+        data_points_int = 100
+        INI_write() # makes INI file with these standard initial conditions
+        
+    #GLOBAL FILE LOCATIONS
+    uis = current / "KORAD_PS_DAQ/UI_Files"
+    inis = current / "KORAD_PS_DAQ/INI"
     
-    if not os.path.exists("INI"):
-        os.makedirs("INI")
-
-    if not os.path.exists("UI_Files"):
-        os.makedirs("UI_Files")
-
-if not os.path.exists("INI/psSettings.ini"):
-    psVoltage = 1.4
-    psCurrentMax = 2.0
-    psVoltageMax = 20.0
-    psVoltage2 = 1.4
-    psCurrentMax2 = 2.0
-    psVoltageMax2 = 20.0
-    dLogInterval = 1.0
-    dAqInterval = 1.0
-    runPS = '0'
-    dAqON = '0'
-    fileName = 'DataLoggingFile.txt'
-    ocp_advset = 'off'
-    ovp_advset = 'on'
-    ocp_advset2 = 'off'
-    ovp_advset2 = 'on'
-    ps_outputStatus1 = "0"
-    ps_outputStatus2 = "0"
-    data_points_int = 100
-    INI_write() # makes INI file with these standard initial conditions
-
+datalogs = ''    
 INI_read()
 
 ports = serial.tools.list_ports.comports() 
@@ -342,8 +382,8 @@ class NoKoradDetected(QDialog):
         global autoContinueorSelection
         super().__init__(parent)
         
-        uic.loadUi("UI_Files/NoKoradDetectedDialog.ui",self)
-        self.setWindowIcon(QIcon("UI_Files/MECMonitoringIcon.ico")) # Set ICONS
+        uic.loadUi(resourcepath(str(uis) + "/NoKoradDetectedDialog.ui"),self)
+        self.setWindowIcon(QIcon(resourcepath(str(uis) + "MECMonitoringIcon.ico"))) # Set ICONS
         autoContinueorSelection = False #By default autocontinue is false
         self.confirm_continue.clicked.connect(self.confirm) #If confirm is clicked -> enter confirm function
         self.cancel.clicked.connect(self.exiting) # If cancel is clicked -> enter exiting function
@@ -426,8 +466,8 @@ class AdvSettings(QDialog):
     def __init__(self, *args, **kwargs):
         global ps_outputStatus1
         super(AdvSettings, self).__init__(*args, **kwargs)
-        uic.loadUi("UI_Files/AdvSettings_v2-3a.ui", self)
-        self.setWindowIcon(QIcon("UI_Files/MECMonitoringIcon.ico")) # Set ICONS
+        uic.loadUi(resourcepath(str(uis) + "/AdvSettings_v2-3a.ui"), self)
+        self.setWindowIcon(QIcon(resourcepath(str(uis) + "/MECMonitoringIcon.ico"))) # Set ICONS
         self.setWindowTitle(u"Advanced PS 1 Settings")
         
         #Sets displays to responding ini file params
@@ -562,8 +602,8 @@ class AdvSettings2(QDialog):
     def __init__(self, *args, **kwargs):
         global ps_outputStatus2
         super(AdvSettings2, self).__init__(*args, **kwargs)
-        uic.loadUi("UI_Files/AdvSettings_v2-3b.ui", self)
-        self.setWindowIcon(QIcon("UI_Files/MECMonitoringIcon.ico")) # Set ICONS
+        uic.loadUi(resourcepath(str(uis) + "/AdvSettings_v2-3b.ui"), self)
+        self.setWindowIcon(QIcon(resourcepath(str(uis) + "/MECMonitoringIcon.ico"))) # Set ICONS
         self.setWindowTitle(u"Advanced PS 2 Settings")
         
         #Sets displays to responding ini file params
@@ -691,8 +731,8 @@ class DataLogSettings(QDialog):
     def __init__(self, *args, **kwargs):
         global dLogInterval, dAqInterval
         super(DataLogSettings, self).__init__(*args, **kwargs)
-        uic.loadUi("UI_Files/DataLogSettings_v2-2.ui", self)
-        self.setWindowIcon(QIcon("UI_Files/MECMonitoringIcon.ico")) # Set ICONS
+        uic.loadUi(resourcepath(str(uis) + "/DataLogSettings_v2-2.ui"), self)
+        self.setWindowIcon(QIcon(resourcepath(str(uis) + "/MECMonitoringIcon.ico"))) # Set ICONS
         self.setWindowTitle('Data Log Settings')
 
         dispfileName = fileName.split('.txt') # gets the file ready to show without the .txt ending
@@ -715,7 +755,7 @@ class PlotSettings(QDialog):
 
     def __init__(self, *args, **kwargs):
         super(PlotSettings, self).__init__(*args, **kwargs)
-        self.setWindowIcon(QIcon("UI_Files/MECMonitoringIcon.ico")) # Set ICONS
+        self.setWindowIcon(QIcon(resourcepath(str(uis) + "/MECMonitoringIcon.ico"))) # Set ICONS
         self.setWindowTitle('Plot Settings')
         self.setModal(True)
         QBtn = QDialogButtonBox.Ok
@@ -744,7 +784,7 @@ class StartUpDelay(QDialog): # OK Button needs removing for final program
         super(StartUpDelay, self).__init__(*args, **kwargs)
 
         self.setWindowTitle("Loading program...")
-        self.setWindowIcon(QIcon("UI_Files/MECMonitoringIcon.ico")) # Set ICONS
+        self.setWindowIcon(QIcon(resourcepath(str(uis) +"/MECMonitoringIcon.ico"))) # Set ICONS
         QBtn = QDialogButtonBox.Ok
 
         self.delaytimerDisplay = QLabel()
@@ -812,11 +852,10 @@ class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         global is_editing_setvals, is_editing_setvals2, y1_label, y2_label, ports, koradports, serial_ports, settingsSaved1, settingsSaved2, dAqON, ps_outputStatus1, ps_outputStatus2, data_points_int
         super(MainWindow, self).__init__(*args, **kwargs)
-        uic.loadUi("UI_Files/RPi_GUI_v1-12.ui", self)
+        uic.loadUi(resourcepath(str(uis) +"/RPi_GUI_v1-12.ui"), self)
         polling = False
-        #self.setWindowIcon(QIcon(r"Icon_Store\icons\lightning.png"))
         self.setWindowTitle('KORAD PS DAQ')
-        self.setWindowIcon(QIcon("UI_Files/MECMonitoringIcon.ico")) # Set ICONS
+        self.setWindowIcon(QIcon(resourcepath(str(uis) +"/MECMonitoringIcon.ico"))) # Set ICONS
         self.tempDisplay1 = self.findChild(QLineEdit,"tempDisplay1")
         self.tempDisplay2 = self.findChild(QLineEdit,"tempDisplay2")
         self.pHDisplay = self.findChild(QLineEdit,"pHDisplay")
@@ -1072,8 +1111,8 @@ class MainWindow(QMainWindow):
         threadEnded = False
         
         while True:
-            device_list = get_devices() #Finds I2C devices
-            
+            if platform.system() == 'Linux':
+                device_list = get_devices() #Finds I2C devices
             """
             Checking for KoradSerial Compatible ports below based on list of serial ports
             If found -> set to dev1 or dev2 respectively
@@ -1787,25 +1826,28 @@ class MainWindow(QMainWindow):
         global device_list
         foundDeviceFlag = False
         
-        for dev in device_list:
-            text = dev.get_device_info().replace('\x00','')
-            temp = re.findall(r"[+-]? *(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?", text)
-            testID = temp[0].strip()
-            
-            if testID == device_id:
-                foundDeviceFlag = True
+        if platform.system() == 'Linux':
+            for dev in device_list:
+                text = dev.get_device_info().replace('\x00','')
+                temp = re.findall(r"[+-]? *(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?", text)
+                testID = temp[0].strip()
                 
-                dev.write("R")
-                
-                timeout = device_list[0].get_command_timeout("R")
-                
-                if(timeout):
-                    time.sleep(timeout)
-                    storage = dev.read().replace('\x00','')
-                    temp_storage = storage.split(":")
-                    return (temp_storage[1].strip())
-                
-        if foundDeviceFlag == False:
+                if testID == device_id:
+                    foundDeviceFlag = True
+                    
+                    dev.write("R")
+                    
+                    timeout = device_list[0].get_command_timeout("R")
+                    
+                    if(timeout):
+                        time.sleep(timeout)
+                        storage = dev.read().replace('\x00','')
+                        temp_storage = storage.split(":")
+                        return (temp_storage[1].strip())
+                    
+            if foundDeviceFlag == False:
+                return "Not configured"
+        else:
             return "Not configured"
         
     def timer_start(self):
@@ -1954,7 +1996,7 @@ class MainWindow(QMainWindow):
             width = 500
             height = 100
             wait.setFixedSize(width,height)
-            wait.setWindowIcon(QIcon("UI_Files/MECMonitoringIcon.ico")) # Set ICONS
+            wait.setWindowIcon(QIcon(str(current)+"/KORAD_PS_DAQ/UI_Files/MECMonitoringIcon.ico")) # Set ICONS
             
             waitText = QLabel(wait)
             waitText.setGeometry(QRect(50,30,650,200))
