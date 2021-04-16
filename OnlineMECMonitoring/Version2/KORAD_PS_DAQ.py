@@ -59,11 +59,10 @@ from pathlib import Path
 import threading
 from threading import Thread
 
-global dLogInterval, dAqInterval, dAqON, runPS, fileName, koradports, ports, polling, device_list, serialportsChanged
+global dLogInterval, dAqInterval, dAqON, runPS, fileName, koradports, ports, polling, device_list
 
 current = pathlib.Path().absolute()
 
-#print(current)
 #------------------------------------------------------------------------------#
 # FUNCTIONS
 #------------------------------------------------------------------------------#
@@ -93,6 +92,37 @@ def get_devices(): #Function to find compatible ezo circuit devices via a list o
                 device_list.append(AtlasI2C(address = i, moduletype = moduletype, name = response))
     return device_list
 
+def i2c_pHFunctions(device_id, check):
+    global device_list
+    foundDeviceFlag = False
+    
+    if platform.system() == 'Linux':
+        for dev in device_list:
+            text = dev.get_device_info().replace('\x00','')
+            temp = re.findall(r"[+-]? *(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?", text)
+            testID = temp[0].strip()
+            
+            if testID == device_id:
+                foundDeviceFlag = True
+                
+                if check == True:
+                    dev.write("Cal,?")
+                
+                timeout = device_list[0].get_command_timeout("R")
+                
+                if(timeout):
+                    time.sleep(timeout)
+                    storage = dev.read().replace('\x00','')
+                    temp_storage = storage.split(":")
+                    temp = temp_storage[1].strip()
+                    temp = temp.strip("?CAL,")
+                    return (temp)
+                
+        if foundDeviceFlag == False:
+            return "Not configured"
+    else:
+        return "Not configured"
+    
 #Define resource path to access external files when using pyinstaller
 def resourcepath(relative_path):
     #Get absolute path to resource and then appends correct file prefix
@@ -110,7 +140,10 @@ def splitSerToArr(ser):
 
 def INI_write(): # function to write an INI file
     global psVoltage, psCurrentMax, psVoltageMax, psVoltage2, psCurrentMax2, psVoltageMax2,runPS, dLogInterval, dAqInterval, dAqON, ovp_advset, ocp_advset, ocp_advset2, ovp_advset2, ps_outputStatus1, ps_outputStatus2, koradports, fileName, data_points_int
-    cfgfile = open(resourcepath(str(inis) + "/psSettings.ini"),'w') #INI file creation. I would take this from the final code. This is just for the test
+    global graph1a_V1_Up, graph1a_V1_Down, graph1a_V2_Up, graph1a_V2_Down, graph1b_C1_Up, graph1b_C1_Down, graph1b_C2_Up, graph1b_C2_Down        
+    global graph2_T1_Up, graph2_T1_Down, graph2_T2_Up, graph2_T2_Down, graph3_pH_Up, graph3_pH_Down
+    
+    cfgfile = open(resourcepath(str(inis) + "/psSettings.ini"),'w')
     parser = ConfigParser()
     parser.read(resourcepath(str(inis) + "/psSettings.ini"))
     
@@ -168,6 +201,21 @@ def INI_write(): # function to write an INI file
     """
     parser.add_section('Plot Settings')
     parser.set('Plot Settings', 'number of data points', str(data_points_int))
+    parser.set('Plot Settings', 'Graph1a_Voltage1_UpperLimit', str(graph1a_V1_Up))
+    parser.set('Plot Settings', 'Graph1a_Voltage1_LowerLimit', str(graph1a_V1_Down))
+    parser.set('Plot Settings', 'Graph1a_Voltage2_UpperLimit', str(graph1a_V2_Up))
+    parser.set('Plot Settings', 'Graph1a_Voltage2_LowerLimit', str(graph1a_V2_Down))
+    parser.set('Plot Settings', 'Graph1b_Current1_UpperLimit', str(graph1b_C1_Up))
+    parser.set('Plot Settings', 'Graph1b_Current1_LowerLimit', str(graph1b_C1_Down))
+    parser.set('Plot Settings', 'Graph1b_Current2_UpperLimit', str(graph1b_C2_Up))
+    parser.set('Plot Settings', 'Graph1b_Current2_LowerLimit', str(graph1b_C2_Down))
+    parser.set('Plot Settings', 'Graph2_Temperature1_UpperLimit', str(graph2_T1_Up))
+    parser.set('Plot Settings', 'Graph2_Temperature1_LowerLimit', str(graph2_T1_Down))
+    parser.set('Plot Settings', 'Graph2_Temperature2_UpperLimit', str(graph2_T2_Up))
+    parser.set('Plot Settings', 'Graph2_Temperature2_LowerLimit', str(graph2_T2_Down))
+    parser.set('Plot Settings', 'Graph3_pH_UpperLimit', str(graph3_pH_Up))
+    parser.set('Plot Settings', 'Graph3_pH_LowerLimit', str(graph3_pH_Down))
+    
 
     with open(resourcepath(str(inis) + "/psSettings.ini"),'w') as configfile:
         parser.write(configfile)
@@ -175,7 +223,9 @@ def INI_write(): # function to write an INI file
 
 def INI_read(): # function to read an INI file
     global ps, psVoltage, psCurrentMax, psVoltageMax, psVoltage2, psCurrentMax2, psVoltageMax2, runPS, dLogInterval, dAqInterval, dAqON, ocp_advset, ovp_advset, ocp_advset2, ovp_advset2, ps_outputStatus1, ps_outputStatus2, koradports, fileName, data_points_int
-    #cfgfile = open("INI/psSettings.ini",'r') #INI file creation. I would take this from the final code. This is just for the test
+    global graph1a_V1_Up, graph1a_V1_Down, graph1a_V2_Up, graph1a_V2_Down, graph1b_C1_Up, graph1b_C1_Down, graph1b_C2_Up, graph1b_C2_Down        
+    global graph2_T1_Up, graph2_T1_Down, graph2_T2_Up, graph2_T2_Down, graph3_pH_Up, graph3_pH_Down
+    
     parser = ConfigParser()
     parser.read(resourcepath(str(inis) + "/psSettings.ini"))
 
@@ -208,6 +258,20 @@ def INI_read(): # function to read an INI file
         pass
 
     data_points_int = int(parser.get("Plot Settings", 'number of data points'))
+    graph1a_V1_Up = int(parser.get("Plot Settings", 'Graph1a_Voltage1_UpperLimit'))
+    graph1a_V1_Down = int(parser.get("Plot Settings", 'Graph1a_Voltage1_LowerLimit'))
+    graph1a_V2_Up = int(parser.get("Plot Settings", 'Graph1a_Voltage2_UpperLimit'))
+    graph1a_V2_Down = int(parser.get("Plot Settings", 'Graph1a_Voltage2_LowerLimit'))
+    graph1b_C1_Up = int(parser.get("Plot Settings", 'Graph1b_Current1_UpperLimit'))
+    graph1b_C1_Down = int(parser.get("Plot Settings", 'Graph1b_Current1_LowerLimit'))
+    graph1b_C2_Up = int(parser.get("Plot Settings", 'Graph1b_Current2_UpperLimit'))
+    graph1b_C2_Down = int(parser.get("Plot Settings", 'Graph1b_Current2_LowerLimit'))
+    graph2_T1_Up = int(parser.get("Plot Settings", 'Graph2_Temperature1_UpperLimit'))
+    graph2_T1_Down = int(parser.get("Plot Settings", 'Graph2_Temperature1_LowerLimit'))
+    graph2_T2_Up = int(parser.get("Plot Settings", 'Graph2_Temperature2_UpperLimit'))
+    graph2_T2_Down = int(parser.get("Plot Settings", 'Graph2_Temperature2_LowerLimit'))
+    graph3_pH_Up = int(parser.get("Plot Settings", 'Graph3_pH_UpperLimit'))
+    graph3_pH_Down = int(parser.get("Plot Settings", 'Graph3_pH_LowerLimit'))
 
 
 def PS_writeDevice(channel):
@@ -288,7 +352,12 @@ if platform.system() == "Windows": # if the operating system is windows
         
     if not os.path.exists(resourcepath(str(current)+"/KORAD_PS_DAQ/INI")):
         os.makedirs(resourcepath(str(current)+"/KORAD_PS_DAQ/INI"))
-        
+    
+    #GLOBAL FILE LOCATIONS
+    uis = "KORAD_PS_DAQ/UI_Files"
+    inis = "KORAD_PS_DAQ/INI"
+    datalogs = "KORAD_PS_DAQ/Data_Logs"
+    
     if not os.path.exists(resourcepath(str(current)+"/KORAD_PS_DAQ/INI/psSettings.ini")):
         psVoltage = 1.4
         psCurrentMax = 2.0
@@ -308,20 +377,34 @@ if platform.system() == "Windows": # if the operating system is windows
         ps_outputStatus1 = "0"
         ps_outputStatus2 = "0"
         data_points_int = 100
+        graph1a_V1_Up = 0
+        graph1a_V1_Down = 0
+        graph1a_V2_Up = 0
+        graph1a_V2_Down = 0
+        graph1b_C1_Up = 0
+        graph1b_C1_Down = 0
+        graph1b_C2_Up = 0
+        graph1b_C2_Down = 0
+        graph2_T1_Up = 0
+        graph2_T1_Down = 0
+        graph2_T2_Up = 0
+        graph2_T2_Down = 0
+        graph3_pH_Up = 0
+        graph3_pH_Down = 0
         INI_write() # makes INI file with these standard initial conditions
         
-    #GLOBAL FILE LOCATIONS
-    uis = "KORAD_PS_DAQ/UI_Files"
-    inis = "KORAD_PS_DAQ/INI"
-    datalogs = "KORAD_PS_DAQ/Data_Logs"
     
-
 elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'): # if the operating system is linux
     if not os.path.exists(resourcepath(str(current)+"/KORAD_PS_DAQ")): # and there's no directory folder
         os.makedirs(resourcepath(str(current) + "/KORAD_PS_DAQ"))
 
     if not os.path.exists(resourcepath(str(current)+"/KORAD_PS_DAQ/INI")):
         os.makedirs(resourcepath(str(current)+"/KORAD_PS_DAQ/INI"))
+    
+    #GLOBAL FILE LOCATIONS
+    uis = current / "KORAD_PS_DAQ/UI_Files"
+    inis = current / "KORAD_PS_DAQ/INI"
+    datalogs = current / "KORAD_PS_DAQ/Data_Logs"
 
     if not os.path.exists(resourcepath(str(current)+"/KORAD_PS_DAQ/INI/psSettings.ini")):
         psVoltage = 1.4
@@ -342,11 +425,23 @@ elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'): # if
         ps_outputStatus1 = "0"
         ps_outputStatus2 = "0"
         data_points_int = 100
+        graph1a_V1_Up = 0
+        graph1a_V1_Down = 0
+        graph1a_V2_Up = 0
+        graph1a_V2_Down = 0
+        graph1b_C1_Up = 0
+        graph1b_C1_Down = 0
+        graph1b_C2_Up = 0
+        graph1b_C2_Down = 0
+        graph2_T1_Up = 0
+        graph2_T1_Down = 0
+        graph2_T2_Up = 0
+        graph2_T2_Down = 0
+        graph3_pH_Up = 0
+        graph3_pH_Down = 0
         INI_write() # makes INI file with these standard initial conditions
         
-    #GLOBAL FILE LOCATIONS
-    uis = current / "KORAD_PS_DAQ/UI_Files"
-    inis = current / "KORAD_PS_DAQ/INI"
+    
     
 datalogs = ''    
 INI_read()
@@ -383,7 +478,7 @@ class NoKoradDetected(QDialog):
         super().__init__(parent)
         
         uic.loadUi(resourcepath(str(uis) + "/NoKoradDetectedDialog.ui"),self)
-        self.setWindowIcon(QIcon(resourcepath(str(uis) + "MECMonitoringIcon.ico"))) # Set ICONS
+        self.setWindowIcon(QIcon(resourcepath(str(uis) + "/MECMonitoringIcon.ico"))) # Set ICONS
         autoContinueorSelection = False #By default autocontinue is false
         self.confirm_continue.clicked.connect(self.confirm) #If confirm is clicked -> enter confirm function
         self.cancel.clicked.connect(self.exiting) # If cancel is clicked -> enter exiting function
@@ -461,6 +556,388 @@ class CustomVLine(QFrame):
 #------------------------------------------------------------------------------#
 # DIALOG
 #------------------------------------------------------------------------------#
+class pHNavigation(QDialog):
+    
+    def __init__(self, parent = None):
+        global device_list, pHDevices, phCalibrationStatus
+        super().__init__(parent)
+        
+        uic.loadUi(resourcepath(str(uis) + "/pHNavigation.ui"),self)
+        self.setWindowIcon(QIcon(resourcepath(str(uis) + "/MECMonitoringIcon.ico"))) # Set ICONS
+        
+        flag = False
+        if platform.system() == 'Linux':
+            device_list = get_devices() #Finds I2C devices
+            pHDevices = []
+            for dev in device_list:
+                text = str(dev.get_device_info().replace('\x00',''))
+                if "pH" in text:
+                    temp = re.findall(r"[+-]? *(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?", text)
+                    ID = temp[0].strip()
+                    pHDevices.append(ID)
+            
+            pH = self.i2c_readwrite(pHDevices[0])
+            if pH == "Not configured":
+                warning = QMessageBox.warning(self, 'Error!', 'pH EZO circuit board not configured.\nMake sure it is running in I2C mode and is connected properly.')
+            elif not pH == "Not configured":
+                try:
+                    if float(pH) <= 0 or float(pH) > 15 :
+                        pH = "No probe connected"
+                except Exception: 
+                    pH = "No probe connected"
+                    
+            if not pH == "No probe connected":
+                calCheck = i2c_pHFunctions(pHDevices[0],True)
+                if calCheck == "Not configured":
+                    warning = QMessageBox.warning(self, 'Error!', 'pH EZO circuit board not configured.\nMake sure it is running in I2C mode and is connected properly.')
+                else:
+                    flag = True
+            else:
+                warning = QMessageBox.warning(self, 'Error, probe not connected!', 'Probe is not connected.\nPlease make sure it is connected before trying again.')
+        
+        elif platform.system() == "Windows":
+            warning = QMessageBox.warning(self, 'Platform error!', 'I2C functionality is not compatible with Windows.')
+            
+        if flag == False:
+            phCalibrationStatus = False
+            self.close() #IN PROGRAM MEC, MAKE IT self.close()
+            
+        self.single = self.findChild(QPushButton,'single')
+        self.two = self.findChild(QPushButton,'two')
+        self.three = self.findChild(QPushButton,'three')
+        self.cancel = self.findChild(QPushButton,'cancel')
+        self.pHSelection = self.findChild(QComboBox,'pHSelection')
+        
+        for x in range(len(pHDevices)):
+            self.pHSelection.addItem(pHDevices[x])
+        
+        self.single.clicked.connect(lambda: self.checkSelections(1, pHDevices[self.pHSelection.currentIndex()]))
+        self.two.clicked.connect(lambda: self.checkSelections(2, pHDevices[self.pHSelection.currentIndex()]))
+        self.three.clicked.connect(lambda: self.checkSelections(3, pHDevices[self.pHSelection.currentIndex()]))
+        self.cancel.clicked.connect(self.close)
+        
+    def checkSelections(self, points, address):
+        global phCalibrationStatus
+        calCheck = i2c_pHFunctions(address,True)
+        
+        if calCheck == "0":
+            prevCalib = QMessageBox.question(self, 'pH Calibration', 'There is no previous calibration data.\nWould you like to calibrate pH?', QMessageBox.Yes | QMessageBox.No)
+        elif calCheck == "1":
+            prevCalib = QMessageBox.question(self, 'Overwrite previous calibration?', 'There is previous calibration data.\nWould you like to overwrite the previous single point calibration?', QMessageBox.Yes | QMessageBox.No)
+        elif calCheck == "2":
+            prevCalib = QMessageBox.question(self, 'Overwrite previous calibration?', 'There is previous calibration data.\nWould you like to overwrite the previous two point calibration?', QMessageBox.Yes | QMessageBox.No)
+        elif calCheck == "3":
+            prevCalib = QMessageBox.question(self, 'Overwrite previous calibration?', 'There is previous calibration data.\nWould you like to overwrite the previous three point calibration?', QMessageBox.Yes | QMessageBox.No)
+        else:
+            warning = QMessageBox.warning(self, 'Error!', 'pH EZO circuit board not configured.\nMake sure it is running in I2C mode and is connected properly.')
+            phCalibrationStatus = False
+            self.close()
+            
+        if prevCalib == QMessageBox.Yes:
+            #EXEC CALIBRATION PROGRAM DIALOG -> Adjust based on points
+            self.close()
+            calib_dlg = CalibrationDialog(self, points, address)
+            try:
+                calib_dlg.show()
+            except Exception:
+                error = QMessageBox.warning(self, 'Error!', 'Calibration Settings Failed to Open')
+        else:
+            phCalibrationStatus = False
+            self.close()
+        
+    def i2c_readwrite(self, device_id):
+        global device_list
+        foundDeviceFlag = False
+        
+        if platform.system() == 'Linux':
+            for dev in device_list:
+                text = dev.get_device_info().replace('\x00','')
+                temp = re.findall(r"[+-]? *(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?", text)
+                testID = temp[0].strip()
+                
+                if testID == device_id:
+                    foundDeviceFlag = True
+                    
+                    dev.write("R")
+                    
+                    timeout = device_list[0].get_command_timeout("R")
+                    
+                    if(timeout):
+                        time.sleep(timeout)
+                        storage = dev.read().replace('\x00','')
+                        temp_storage = storage.split(":")
+                        return (temp_storage[1].strip())
+                    
+            if foundDeviceFlag == False:
+                return "Not configured"
+        else:
+            return "Not configured"
+        
+class CalibrationDialog(QDialog):
+    update_TextSignal = pyqtSignal(str)
+    update_statusSignal = pyqtSignal(str)
+    messageBox_Signal = pyqtSignal(bool)
+    
+    def __init__(self, parent, points, address):
+        super().__init__(parent)
+        
+        uic.loadUi(resourcepath(str(uis) + "/pHCalibration.ui"),self)
+        self.setWindowIcon(QIcon(resourcepath(str(uis) + "/MECMonitoringIcon.ico"))) # Set ICONS
+        
+        self.points = int(points)
+        self.address = str(address)
+        
+        self.status = self.findChild(QLabel,'status')
+        self.i2cOutput = self.findChild(QTextEdit,'i2cOutput')
+        self.i2cOutput.setReadOnly(True)
+        self.i2cOutput.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
+
+        self.pHContinueMid = pHMessageBox(self, 1)
+        self.pHContinueLow = pHMessageBox(self, 2)
+        self.pHContinueHigh = pHMessageBox(self, 3)
+        self.textEdit = ''
+        self.update_TextSignal.connect(self.update_Text)
+        self.update_statusSignal.connect(self.update_Status)
+        self.messageBox_Signal.connect(self.showMessageBox)
+        #Start threads
+        self.runCalibThread()
+    
+    @QtCore.pyqtSlot(bool)
+    def showMessageBox(self, failed):
+        global phCalibrationStatus
+        if failed == False:
+            warning = QMessageBox.information(self, 'Calibration Finished', "The pH probe has been calibrated. You may exit safely now.")
+            phCalibrationStatus = False
+            self.close()
+        else:
+            warning = QMessageBox.information(self, 'Calibration Failed', "Please close program and try again.")
+            phCalibrationStatus = False
+            self.close()
+            
+    @QtCore.pyqtSlot(str)
+    def update_Status(self,text):
+        self.status.setText(text)
+        
+    @QtCore.pyqtSlot(str)
+    def update_Text(self,text):
+        self.i2cOutput.setText(text)
+        self.i2cOutput.setReadOnly(True)
+        self.i2cOutput.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
+    
+    def runCalibThread(self):
+        tCalibThread = threading.Thread(target= self.calibThread1)
+        tCalibThread.daemon = True
+        tCalibThread.start()
+                    
+    def calibThread1(self):
+        global calibcont, calibFailed, calibExit, phCalibrationStatus, calibWaiting 
+        calibExit = True
+        calibFailed = False
+        calibWaiting = False
+        
+        if self.points >= 1 and calibFailed == False:
+            calibcont = False
+            self.pHContinueMid.show()
+            while calibcont == False:
+                time.sleep(1)
+                
+            if calibExit == False:
+                self.stabilized = False
+                self.textEdit = ''
+                self.update_statusSignal.emit("pH Sensor Readings - Reaching steady state (Midpoint calibration)")
+
+                prev = float(self.i2c_readwrite(self.address, "R"))
+                self.textEdit += 'pH = '+ str(prev) + '\n'
+                self.update_TextSignal.emit(self.textEdit)
+                while self.stabilized == False:
+                    time.sleep(0.2)
+                    val = self.steadyStateTest(prev, 0)
+                    self.stabilized = True
+                
+                if calibFailed == False and calibExit == False:
+                    self.i2c_readwrite(self.address,"cal,mid,7")
+                    self.update_statusSignal.emit("pH Sensor Readings - Steady state attained and new midpoint calibrated")
+        
+        if calibExit == False:
+            if self.points >= 2 and calibFailed == False:
+                calibcont = False
+                calibExit = True
+                self.pHContinueLow.show()
+                while calibcont == False:
+                    time.sleep(1)
+                    
+                if calibExit == False:
+                    self.stabilized = False
+                    self.textEdit = ''
+                    self.update_statusSignal.emit("pH Sensor Readings - Reaching steady state (Lowpoint calibration)")
+                    prev = float(self.i2c_readwrite(self.address, "R"))
+                    self.textEdit += 'pH = '+ str(prev) + '\n'
+                    self.update_TextSignal.emit(self.textEdit)
+                    while self.stabilized == False:
+                        time.sleep(0.2)
+                        val = self.steadyStateTest(prev, 0)
+                        self.stabilized = True
+                    
+                    if calibFailed == False and calibExit == False:
+                        self.i2c_readwrite(self.address,"cal,low,4")
+                        self.update_statusSignal.emit("pH Sensor Readings - Steady state attained and new lowpoint calibrated")
+                        
+        if calibExit == False:
+            if self.points >= 3 and calibFailed == False:
+                calibcont = False
+                calibExit = True
+                self.pHContinueHigh.show()
+                while calibcont == False:
+                    time.sleep(1)
+                if calibExit == False:
+                    self.stabilized = False
+                    self.textEdit = ''
+                    self.update_statusSignal.emit("pH Sensor Readings - Reaching steady state (Highpoint calibration)")
+                    
+                    prev = float(self.i2c_readwrite(self.address, "R"))
+                    self.textEdit += 'pH = '+ str(prev) + '\n'
+                    self.update_TextSignal.emit(self.textEdit)
+                    while self.stabilized == False:
+                        time.sleep(0.2)
+                        val = self.steadyStateTest(prev, 0)
+                        self.stabilized = True
+                    
+                    if calibFailed == False and calibExit == False:
+                        self.i2c_readwrite(self.address,"cal,high,10")
+                        self.update_statusSignal.emit("pH Sensor Readings - Steady state attained and new highpoint calibrated")
+        
+        if calibExit == False:
+            self.messageBox_Signal.emit(calibFailed)
+        else:
+            phCalibrationStatus = False
+            self.close()
+            
+    def closeEvent(self,event):
+        global calibcont, calibFailed, calibExit, phCalibrationStatus, calibWaiting, calibExit
+        
+        if phCalibrationStatus == True:
+            calibWaiting = True
+            exiting = QMessageBox.question(self, 'Cancel pH calibration', 'Are you sure you want to cancel pH calibration?', QMessageBox.Yes | QMessageBox.No)
+        
+            #If yes was selected
+            if exiting == QMessageBox.Yes:
+                calibExit = True
+                calibWaiting = False
+                event.accept()
+            else:
+                if not type(event) == bool:
+                    calibWaiting = False
+                    event.ignore()
+        else:
+            event.accept()
+
+    def i2c_readwrite(self, device_id, command):
+        global device_list
+        foundDeviceFlag = False
+        
+        if platform.system() == 'Linux':
+            for dev in device_list:
+                text = dev.get_device_info().replace('\x00','')
+                temp = re.findall(r"[+-]? *(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?", text)
+                testID = temp[0].strip()
+                
+                if testID == device_id:
+                    foundDeviceFlag = True
+                    
+                    dev.write(command)
+                    
+                    timeout = device_list[0].get_command_timeout("R")
+                    
+                    if(timeout):
+                        time.sleep(timeout)
+                        storage = dev.read().replace('\x00','')
+                        temp_storage = storage.split(":")
+                        return (temp_storage[1].strip())
+
+    def steadyStateTest(self, previous, iterations):
+        global calibFailed, calibWaiting, calibExit
+        
+        while calibWaiting == True:
+            loop = QEventLoop()
+            QTimer.singleShot(500, loop.quit)
+            loop.exec_()
+            
+        if calibExit == True:
+            return 0
+        
+        current = float(self.i2c_readwrite(self.address, "R"))
+        self.textEdit += 'pH = '+ str(current) + '\n'
+        self.update_TextSignal.emit(self.textEdit)
+        
+        if str(current) == "255" or str(current) == "254":
+            self.textEdit += 'Calibration Error!\n'
+            self.update_TextSignal.emit(self.textEdit)
+            calibFailed = True
+            return 0
+        #If iterations == user entered iterations -> Return current MFC voltage value
+        if iterations == 3:
+            return current
+        
+        #If percent difference is within user selected tolerance (increase consecutive succesful iteration by 1) and repeat
+        elif (self.percentDifference(previous, current)) <= 2:
+            iterations+=1
+            #Try to run it again recursively -> If stack overflow (Return current value) -> Treat current as previous for next iteration
+            try:
+                return self.steadyStateTest(current, iterations)
+            except Exception:
+                return current
+        #Otherwise, reset consecutive succesful iteration to 0 and repeat
+        else:
+            iterations = 0
+            #Try to run it again recursively -> If stack overflow (Return current value)
+            try:
+                return self.steadyStateTest(current, iterations)
+            except Exception:
+                return current
+    
+    def percentDifference(self, previous, current):
+        if current == previous:
+            return 0
+        
+        try:
+            return(abs(current-previous)/previous)*100
+        
+        except ZeroDivisionError:
+            return float('inf')
+            
+
+class pHMessageBox(QDialog):
+    
+    def __init__(self, parent, point):
+        super().__init__(parent)
+        
+        uic.loadUi(resourcepath(str(uis) + "/pHContinueDialog.ui"),self)
+        self.setWindowIcon(QIcon(resourcepath(str(uis) + "/MECMonitoringIcon.ico"))) # Set ICONS
+        self.setModal(True)
+        self.text = self.findChild(QLabel, "userInfo")
+        self.cont = self.findChild(QPushButton, "cont")
+        
+        if point == 1:
+            self.setWindowTitle("pH Calibration - Midpoint Test (pH = 7.00)")
+            self.text.setText("Insert pH probe into pH 7.00 calibration solution. Press continue once you are ready.")
+        elif point == 2:
+            self.setWindowTitle("pH Calibration - Lowpoint Test (pH = 4.00)")
+            self.text.setText("Insert pH probe into pH 4.00 calibration solution. Press continue once you are ready.")
+        elif point == 3:
+            self.setWindowTitle("pH Calibration - Highpoint Test (pH = 10.00)")
+            self.text.setText("Insert pH probe into pH 10.00 calibration solution. Press continue once you are ready.")
+        
+        self.cont.clicked.connect(self.confirm)
+    
+    def confirm(self):
+        global calibExit
+        calibExit = False
+        self.close()
+    
+    def closeEvent(self,event):
+        global calibcont
+        calibcont = True
+        
 class AdvSettings(QDialog):
 
     def __init__(self, *args, **kwargs):
@@ -754,29 +1231,32 @@ class DataLogSettings(QDialog):
 class PlotSettings(QDialog):
 
     def __init__(self, *args, **kwargs):
+        global graph1a_V1_Up, graph1a_V1_Down, graph1a_V2_Up, graph1a_V2_Down, graph1b_C1_Up, graph1b_C1_Down, graph1b_C2_Up, graph1b_C2_Down        
+        global graph2_T1_Up, graph2_T1_Down, graph2_T2_Up, graph2_T2_Down, graph3_pH_Up, graph3_pH_Down
         super(PlotSettings, self).__init__(*args, **kwargs)
+        uic.loadUi(resourcepath(str(uis) + "/PlotSettings.ui"), self)
         self.setWindowIcon(QIcon(resourcepath(str(uis) + "/MECMonitoringIcon.ico"))) # Set ICONS
         self.setWindowTitle('Plot Settings')
         self.setModal(True)
-        QBtn = QDialogButtonBox.Ok
-
-        self.buttonbox = QDialogButtonBox(QBtn)
-        self.buttonbox.accepted.connect(self.accept)
         
-        #Finds max number of visible data points
-        self.textlayout = QHBoxLayout()
-        self.datapointsLabel = QLabel('# of visible data points on the plot:')
-        self.datapointsLabel.setToolTip("Sets maximum number of visible data points for each line of data")
-        self.datapointsLineEdit = QLineEdit(self)
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.reject)
+        
         self.datapointsLineEdit.setText(str(data_points_int))
-
-        self.textlayout.addWidget(self.datapointsLabel)
-        self.textlayout.addWidget(self.datapointsLineEdit)
-
-        self.layout = QVBoxLayout()
-        self.layout.addLayout(self.textlayout)
-        self.layout.addWidget(self.buttonbox)
-        self.setLayout(self.layout)
+        self.v1_Upper.setValue(graph1a_V1_Up)
+        self.v1_Lower.setValue(graph1a_V1_Down)
+        self.v2_Upper.setValue(graph1a_V2_Up)
+        self.v2_Lower.setValue(graph1a_V2_Down)
+        self.c1_Upper.setValue(graph1b_C1_Up)
+        self.c1_Lower.setValue(graph1b_C1_Down)
+        self.c2_Upper.setValue(graph1b_C2_Up)
+        self.c2_Lower.setValue(graph1b_C2_Down)
+        self.t1_Upper.setValue(graph2_T1_Up)
+        self.t1_Lower.setValue(graph2_T1_Down)
+        self.t2_Upper.setValue(graph2_T2_Up)
+        self.t2_Lower.setValue(graph2_T2_Down)
+        self.pH_Upper.setValue(graph3_pH_Up)
+        self.pH_Lower.setValue(graph3_pH_Down)
 
 class StartUpDelay(QDialog): # OK Button needs removing for final program
     
@@ -848,9 +1328,14 @@ class MainWindow(QMainWindow):
     update_PS_stat1Signal = pyqtSignal(str)
     update_PS_stat2Signal = pyqtSignal(str)
     
+    update_graph1aSignal = pyqtSignal()
+    update_graph1bSignal = pyqtSignal()
+    update_graph2Signal = pyqtSignal()
+    update_graph3Signal = pyqtSignal()
 
     def __init__(self, *args, **kwargs):
-        global is_editing_setvals, is_editing_setvals2, y1_label, y2_label, ports, koradports, serial_ports, settingsSaved1, settingsSaved2, dAqON, ps_outputStatus1, ps_outputStatus2, data_points_int
+        global is_editing_setvals, is_editing_setvals2, ports, koradports, serial_ports, settingsSaved1, settingsSaved2, dAqON, ps_outputStatus1, ps_outputStatus2, data_points_int
+        global calibStart, calibThread
         super(MainWindow, self).__init__(*args, **kwargs)
         uic.loadUi(resourcepath(str(uis) +"/RPi_GUI_v1-12.ui"), self)
         polling = False
@@ -859,7 +1344,7 @@ class MainWindow(QMainWindow):
         self.tempDisplay1 = self.findChild(QLineEdit,"tempDisplay1")
         self.tempDisplay2 = self.findChild(QLineEdit,"tempDisplay2")
         self.pHDisplay = self.findChild(QLineEdit,"pHDisplay")
-        
+            
         self.timer = QtCore.QTimer(self)
         self.timer.setInterval(1000) # Timer counts down one second
         self.timer.timeout.connect(self.on_timeout)
@@ -894,6 +1379,12 @@ class MainWindow(QMainWindow):
 
         self.startButton.setText('START')
         self.startButton.clicked.connect(self.on_start_button_clicked)
+        
+        self.pHCalibration1.setEnabled(True)
+        self.pHCalibration1.clicked.connect(self.pHCalibClicked)
+        calibStart = False
+        calibThread = False
+
         
         self.ps1StatusLabel = QLabel("Power source 1 -")
         self.ps1StatusLabel.setStyleSheet("border:0 ; color: black; font:italic;")
@@ -994,6 +1485,11 @@ class MainWindow(QMainWindow):
         self.update_statusBarSignal.connect(self.update_StatusBar)
         self.update_PS_stat1Signal.connect(self.update_stat1)
         self.update_PS_stat2Signal.connect(self.update_stat2)
+        self.update_graph1aSignal.connect(self.update_graph1a)
+        self.update_graph1bSignal.connect(self.update_graph1b)
+        self.update_graph2Signal.connect(self.update_graph2)
+        self.update_graph3Signal.connect(self.update_graph3)
+
         
     @QtCore.pyqtSlot(str)
     def update_Temp1(self, temp):
@@ -1062,6 +1558,161 @@ class MainWindow(QMainWindow):
             self.statusPS2.setStyleSheet("background-color: red")
         self.statusPS2.setText(text)
         
+    @QtCore.pyqtSlot()
+    def update_graph1a(self):
+        global graph1a_V1_Up, graph1a_V1_Down, graph1a_V2_Up, graph1a_V2_Down
+        
+        line1 = pd.Series(self.y1plot, self.xplot)
+        line3 = pd.Series(self.y3plot, self.xplot)
+       
+        self.graph1a.axes.cla()
+        self.axes1a.cla()
+        self.graph1a.axes.set_title("Voltage", fontweight = 'bold')
+        self.graph1a.axes.set_xlabel("Time recorded", fontweight = 'bold')
+        self.graph1a.axes.set_ylabel('Voltage 1 (V)',color = 'tab:red', fontweight = 'bold')
+        if not(graph1a_V1_Up == 0 and graph1a_V1_Down == 0):
+            self.graph1a.axes.set_ylim(graph1a_V1_Down, graph1a_V1_Up)
+        self.graph1a.axes.plot(*splitSerToArr(line1.dropna()), 'r', label = "Voltage 1", linestyle ='dashed', marker ="o")
+        self.graph1a.axes.tick_params(axis='y', labelcolor='tab:red')
+        
+        self.axes1a.set_ylabel('Voltage 2 (V)', color = 'tab:blue', fontweight = 'bold')
+        if not(graph1a_V2_Up == 0 and graph1a_V2_Down == 0):
+            self.axes1a.set_ylim(graph1a_V2_Down, graph1a_V2_Up)
+        self.axes1a.plot(*splitSerToArr(line3.dropna()),'b',label = "Voltage 2", linestyle ='dashed', marker = "v")
+        self.axes1a.tick_params(axis='y', labelcolor = 'tab:blue')
+        plt.setp(self.graph1a.axes.get_xticklabels(), rotation = 30, horizontalalignment = 'right')
+        self.graph1a.fig.legend(loc = 'upper right', bbox_to_anchor =(1.2,1.2), fancybox = True, shadow = True, ncol = 1, bbox_transform = self.graph1a.axes.transAxes)
+        
+        self.graph1a.draw()
+        self.graph1a.flush_events()
+        
+    @QtCore.pyqtSlot()
+    def update_graph1b(self):
+        global graph1b_C1_Up, graph1b_C1_Down, graph1b_C2_Up, graph1b_C2_Down
+        
+        line2 = pd.Series(self.y2plot, self.xplot2)
+        line4 = pd.Series(self.y4plot, self.xplot2)
+        
+        self.graph1b.axes.cla()
+        self.axes1b.cla()
+        self.graph1b.axes.set_title("Current", fontweight = 'bold')
+        self.graph1b.axes.set_xlabel("Time recorded", fontweight = 'bold')
+        self.graph1b.axes.set_ylabel('Current 1 (mA)',color = 'tab:red', fontweight = 'bold')
+        if not(graph1b_C1_Up == 0 and graph1b_C1_Down == 0):
+            self.graph1b.axes.set_ylim(graph1b_C1_Down, graph1b_C1_Up)
+        self.graph1b.axes.plot(*splitSerToArr(line2.dropna()), 'r', label = "Current 1", linestyle ='dashed', marker ="o")
+        self.graph1b.axes.tick_params(axis='y', labelcolor='tab:red')
+        
+        self.axes1b.set_ylabel('Current 2 (mA)', color = 'tab:blue', fontweight = 'bold')
+        if not(graph1b_C2_Up == 0 and graph1b_C2_Down == 0):
+            self.axes1b.set_ylim(graph1b_C2_Down, graph1b_C2_Up)
+        self.axes1b.plot(*splitSerToArr(line4.dropna()),'b',label = "Current 2", linestyle ='dashed', marker = "v")
+        self.axes1b.tick_params(axis='y', labelcolor = 'tab:blue')
+        plt.setp(self.graph1b.axes.get_xticklabels(), rotation = 30, horizontalalignment = 'right')
+        self.graph1b.fig.legend(loc = 'upper right', bbox_to_anchor =(1.2,1.2), fancybox = True, shadow = True, ncol = 1, bbox_transform = self.graph1b.axes.transAxes)
+        
+        self.graph1b.draw()
+        self.graph1b.flush_events()
+        
+    @QtCore.pyqtSlot()
+    def update_graph2(self):
+        global graph2_T1_Up, graph2_T1_Down, graph2_T2_Up, graph2_T2_Down
+        
+        temp1Line = pd.Series(self.temp1Plot, self.temp1x)
+        temp2Line = pd.Series(self.temp2Plot, self.temp2x)
+        
+        self.graph2.axes.cla()
+        self.axes2.cla()
+        self.graph2.axes.set_title("Temp$_\mathbf{internal}$ and Temp$_\mathbf{external}$", fontweight = 'bold')
+        self.graph2.axes.set_xlabel("Time recorded", fontweight = 'bold')
+        self.graph2.axes.set_ylabel('Temp$_\mathbf{internal}$ ($\circ$C)', color = 'tab:olive', fontweight = 'bold')
+        if not(graph2_T1_Up == 0 and graph2_T1_Down == 0):
+            self.graph2.axes.set_ylim(graph2_T1_Down, graph2_T1_Up)
+        self.graph2.axes.plot(*splitSerToArr(temp1Line.dropna()), 'y', label = 'Temp$_{int}$', linestyle ='dashed', marker ="o")
+        self.graph2.axes.tick_params(axis='y', labelcolor='tab:olive')
+        
+        self.axes2.set_ylabel('Temp$_\mathbf{external}$ ($\circ$C)', color = 'tab:green', fontweight = 'bold')
+        if not(graph2_T2_Up == 0 and graph2_T2_Down == 0):
+            self.axes2.set_ylim(graph2_T2_Down, graph2_T2_Up)
+        self.axes2.plot(*splitSerToArr(temp2Line.dropna()),'g', label = 'Temp$_{ext}$', linestyle ='dashed', marker = "v")
+        self.axes2.tick_params(axis='y', labelcolor = 'tab:green')
+        plt.setp(self.graph2.axes.get_xticklabels(), rotation = 30, horizontalalignment = 'right')
+        self.graph2.fig.legend(loc = 'upper right', bbox_to_anchor =(1.3,1.2), fancybox = True, shadow = True, ncol = 1, bbox_transform = self.graph2.axes.transAxes)
+        
+        self.graph2.draw()
+        self.graph2.flush_events()
+        
+    @QtCore.pyqtSlot()
+    def update_graph3(self):
+        global graph3_pH_Up, graph3_pH_Down
+        
+        pHLine = pd.Series(self.pHPlot, self.pHx)
+        
+        self.graph3.axes.cla()
+        self.graph3.axes.set_title("pH", fontweight = 'bold')
+        self.graph3.axes.set_xlabel("Time recorded", fontweight = 'bold')
+        self.graph3.axes.set_ylabel('pH', color = 'tab:purple', fontweight = 'bold')
+        if not(graph3_pH_Up == 0 and graph3_pH_Down == 0):
+            self.graph3.axes.set_ylim(graph3_pH_Down, graph3_pH_Up)
+        self.graph3.axes.plot(*splitSerToArr(pHLine.dropna()), 'm', label = 'pH', linestyle ='dashed', marker ="o")
+        self.graph3.axes.tick_params(axis='y', labelcolor='tab:purple')
+        plt.setp(self.graph3.axes.get_xticklabels(), rotation = 30, horizontalalignment = 'right')
+        self.graph3.axes.legend()
+        
+        self.graph3.draw()
+        self.graph3.flush_events()
+    
+    def pHCalibClicked(self):
+        global calibStart, calibThread
+        global phCalibrationStatus
+        calibThread = True
+        
+        if dAqON == True:
+            self.startButton.setText('START')
+            self.onlineDisplay.setText('POLLING AND DATA LOGGING STOPPED')
+            self.timer.stop()
+            
+        #Create Waiting Dialog
+        wait = QDialog()
+        wait.setWindowTitle("Loading pH calibration interface")
+        width = 500
+        height = 100
+        wait.setFixedSize(width, height)
+        wait.setWindowIcon(QIcon(str(current)+"/KORAD_PS_DAQ/UI_Files/MECMonitoringIcon.ico")) # Set ICONS
+        
+        #Set waiting Text
+        waitText = QLabel(wait)
+        waitText.setGeometry(QRect(50, 30, 650, 200))
+        waitText.setStyleSheet("font-family: Century Gothic")
+        waitText.setAlignment(Qt.AlignLeading|Qt.AlignLeft|Qt.AlignTop)
+        
+        if dAqON == True:
+            waitText.setText("Loading pH calibration interface...\nPlease wait until the operation is over.")
+        
+        #Show Waiting Dialog
+        wait.show()
+
+        while calibStart == False:
+            loop = QEventLoop()
+            QTimer.singleShot(1000, loop.quit)
+            loop.exec_()
+        
+        calibStart = False
+        
+        pHNav = pHNavigation()
+        wait.close()
+        pHNav.exec_()
+        
+        while phCalibrationStatus == True:
+            loop = QEventLoop()
+            QTimer.singleShot(1000, loop.quit)
+            loop.exec_()
+        
+        if dAqON == True:
+            self.startButton.setText('STOP')
+            self.onlineDisplay.setText('POLLING AND DATA LOGGING ONGOING')
+            self.timer_start()
+        
     def runcheckDevices(self):
         global serialportsChanged
         
@@ -1104,7 +1755,7 @@ class MainWindow(QMainWindow):
         global startLogs
         global device_list
         global settingsSaved1, settingsSaved2, psVoltage, psVoltage2
-        global endThread, threadEnded
+        global endThread, threadEnded, calibStart, calibThread, phCalibrationStatus
         
         #Sets endThread and threadEnded to false
         endThread = False
@@ -1330,7 +1981,7 @@ class MainWindow(QMainWindow):
                     self.y4plot.append(None) 
                     self.y3plot.append(None)
                     
-                time.sleep(0.2)
+                time.sleep(0.5)
                 
                 #Update i2c plot vars and modify sizes of y-values
                 self.check_plot_vars()
@@ -1345,6 +1996,15 @@ class MainWindow(QMainWindow):
             if startLogs == True:
                 self.write_telem()
                 startLogs = False
+            
+            if calibThread == True:
+                calibStart = True
+                phCalibrationStatus = True
+                while phCalibrationStatus == True:
+                    loop = QEventLoop()
+                    QTimer.singleShot(1000, loop.quit)
+                    loop.exec_()
+                calibThread = False
             
             #If flag1 is false -> Disable buttons and emit signal to change PS1 status
             #else -> enable buttons and emit signal to change PS1 status to connected
@@ -1637,11 +2297,28 @@ class MainWindow(QMainWindow):
 
     def on_plotset_button_clicked(self):
         global data_points_int
+        global graph1a_V1_Up, graph1a_V1_Down, graph1a_V2_Up, graph1a_V2_Down, graph1b_C1_Up, graph1b_C1_Down, graph1b_C2_Up, graph1b_C2_Down        
+        global graph2_T1_Up, graph2_T1_Down, graph2_T2_Up, graph2_T2_Down, graph3_pH_Up, graph3_pH_Down
+        
         self.PlotSettings = PlotSettings()
         self.PlotSettings.show()
 
         if self.PlotSettings.exec_():
             data_points_int = int(self.PlotSettings.datapointsLineEdit.text())
+            graph1a_V1_Up = self.PlotSettings.v1_Upper.value()
+            graph1a_V1_Down = self.PlotSettings.v1_Lower.value()
+            graph1a_V2_Up = self.PlotSettings.v2_Upper.value()
+            graph1a_V2_Down = self.PlotSettings.v2_Lower.value()
+            graph1b_C1_Up = self.PlotSettings.c1_Upper.value()
+            graph1b_C1_Down = self.PlotSettings.c1_Lower.value()
+            graph1b_C2_Up = self.PlotSettings.c2_Upper.value()
+            graph1b_C2_Down = self.PlotSettings.c2_Lower.value()
+            graph2_T1_Up = self.PlotSettings.t2_Upper.value()
+            graph2_T1_Down = self.PlotSettings.t1_Lower.value()
+            graph2_T2_Up = self.PlotSettings.t2_Upper.value()
+            graph2_T2_Down = self.PlotSettings.t2_Lower.value()
+            graph3_pH_Up = self.PlotSettings.pH_Upper.value()
+            graph3_pH_Down = self.PlotSettings.pH_Lower.value()
             INI_write() # to update y1_var, y2_var, data_points_int in INI
 
             self.PlotSettings.close()
@@ -1662,7 +2339,7 @@ class MainWindow(QMainWindow):
         else:
             self.temp2Plot.append(None)
         if not (self.pHDisplay.text() == "No probe connected" or self.pHDisplay.text() == "Not configured"):
-            self.pHPlot.append(round(float(self.pHDisplay.text()), 3))
+            self.pHPlot.append(round(float(self.pHDisplay.text()), 1))
         else:
             self.pHPlot.append(None)
         
@@ -1744,8 +2421,9 @@ class MainWindow(QMainWindow):
             else:
                 self.startButton.setText('STOP')
                 self.onlineDisplay.setText('POLLING AND DATA LOGGING ONGOING')
+                self.startButton.setChecked(True)
                 INI_read() # applies specifications stored in INI file
-
+                                    
                 dAqON = True
                 runPS = True
                 polling = True
@@ -1772,6 +2450,7 @@ class MainWindow(QMainWindow):
             
             self.startButton.setText('START')
             self.onlineDisplay.setText('POLLING AND DATA LOGGING STOPPED')
+            self.startButton.setChecked(False)
             self.timer.stop()
             
             try:
@@ -1790,10 +2469,11 @@ class MainWindow(QMainWindow):
             INI_write() # to update dAqON and runPS bools in INI
 
     def pollingStart(self):
-
+        #TEMP_1 (Interior Temperature) : Address == 101
+        #TEMP_2 (Exterior Temperature) : Address == 102
+        #PH : ADDRESS == 99
         temp1 = self.i2c_readwrite("101")
         temp2 = self.i2c_readwrite("102")
-        pH = self.i2c_readwrite("99")
         
         if not temp1 == "Not configured":
             try:
@@ -1809,19 +2489,65 @@ class MainWindow(QMainWindow):
             except Exception:
                 temp2 = "No probe connected"
         
+        #TEMPERATURE COMPENSATION
+        if temp1 == "Not configured" or temp1 == "No probe connected":
+            adjust = 23
+        else:
+            adjust = round(float(temp1),2)
+        temppH = self.tempCompensation('99', adjust)
+        
+        if temppH == "Not configured":
+            pH = "Not configured"
+        else:
+            pH = self.i2c_readwrite("99")
         
         if not pH == "Not configured":
             try:
                 if float(pH) <= 0 or float(pH) > 15 :
                     pH = "No probe connected"
+                    self.pHCalibration1.setEnabled(False)
+                else:
+                    pH = str(round(float(pH),1))
+                    self.pHCalibration1.setEnabled(True)
             except Exception: 
                 pH = "No probe connected"
-            
+                self.pHCalibration1.setEnabled(False)
+
+        else:
+            self.pHCalibration1.setEnabled(False)
         
         self.update_Temp1Signal.emit(temp1)
         self.update_Temp2Signal.emit(temp2)
         self.update_pHSignal.emit(pH)
-
+    
+    def tempCompensation(self,device_id,adjust):
+        global device_list
+        foundDeviceFlag = False
+        
+        if platform.system() == 'Linux':
+            for dev in device_list:
+                text = dev.get_device_info().replace('\x00','')
+                temp = re.findall(r"[+-]? *(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?", text)
+                testID = temp[0].strip()
+                
+                if testID == device_id:
+                    foundDeviceFlag = True
+                    
+                    dev.write("T,"+str(adjust))
+                    
+                    timeout = device_list[0].get_command_timeout("R")
+                    
+                    if(timeout):
+                        time.sleep(timeout)
+                        storage = dev.read().replace('\x00','')
+                        temp_storage = storage.split(":")
+                        return (temp_storage[1].strip())
+                    
+            if foundDeviceFlag == False:
+                return "Not configured"
+        else:
+            return "Not configured"
+    
     def i2c_readwrite(self, device_id):
         global device_list
         foundDeviceFlag = False
@@ -1911,71 +2637,11 @@ class MainWindow(QMainWindow):
         self.pHx.append(tchart)
         self.pHx = self.pHx[-data_points_int:]
         
-        line1 = pd.Series(self.y1plot, self.xplot)
-        line2 = pd.Series(self.y2plot, self.xplot2)
-        line3 = pd.Series(self.y3plot, self.xplot)
-        line4 = pd.Series(self.y4plot, self.xplot2)
-        temp1Line = pd.Series(self.temp1Plot, self.temp1x)
-        temp2Line = pd.Series(self.temp2Plot, self.temp2x)
-        pHLine = pd.Series(self.pHPlot, self.pHx)
+        self.update_graph1aSignal.emit()
+        self.update_graph1bSignal.emit()
+        self.update_graph2Signal.emit()
+        self.update_graph3Signal.emit()
         
-        self.graph1a.axes.cla()
-        self.axes1a.cla()
-        self.graph1a.axes.set_title("Voltage", fontweight = 'bold')
-        self.graph1a.axes.set_xlabel("Time recorded", fontweight = 'bold')
-        self.graph1a.axes.set_ylabel('Voltage 1 (V)',color = 'tab:red', fontweight = 'bold')
-        self.graph1a.axes.plot(*splitSerToArr(line1.dropna()), 'r', label = "Voltage 1", linestyle ='dashed', marker ="o")
-        self.graph1a.axes.tick_params(axis='y', labelcolor='tab:red')
-        
-        self.axes1a.set_ylabel('Voltage 2 (V)', color = 'tab:blue', fontweight = 'bold')
-        self.axes1a.plot(*splitSerToArr(line3.dropna()),'b',label = "Voltage 2", linestyle ='dashed', marker = "v")
-        self.axes1a.tick_params(axis='y', labelcolor = 'tab:blue')
-        plt.setp(self.graph1a.axes.get_xticklabels(), rotation = 30, horizontalalignment = 'right')
-        self.graph1a.fig.legend(loc = 'upper right', bbox_to_anchor =(1.2,1.2), fancybox = True, shadow = True, ncol = 1, bbox_transform = self.graph1a.axes.transAxes)
-        
-        self.graph1b.axes.cla()
-        self.axes1b.cla()
-        self.graph1b.axes.set_title("Current", fontweight = 'bold')
-        self.graph1b.axes.set_xlabel("Time recorded", fontweight = 'bold')
-        self.graph1b.axes.set_ylabel('Current 1 (mA)',color = 'tab:red', fontweight = 'bold')
-        self.graph1b.axes.plot(*splitSerToArr(line2.dropna()), 'r', label = "Current 1", linestyle ='dashed', marker ="o")
-        self.graph1b.axes.tick_params(axis='y', labelcolor='tab:red')
-        
-        self.axes1b.set_ylabel('Current 2 (mA)', color = 'tab:blue', fontweight = 'bold')
-        self.axes1b.plot(*splitSerToArr(line4.dropna()),'b',label = "Current 2", linestyle ='dashed', marker = "v")
-        self.axes1b.tick_params(axis='y', labelcolor = 'tab:blue')
-        plt.setp(self.graph1b.axes.get_xticklabels(), rotation = 30, horizontalalignment = 'right')
-        self.graph1b.fig.legend(loc = 'upper right', bbox_to_anchor =(1.2,1.2), fancybox = True, shadow = True, ncol = 1, bbox_transform = self.graph1b.axes.transAxes)
-        
-        
-        self.graph2.axes.cla()
-        self.axes2.cla()
-        self.graph2.axes.set_title("Temp$_\mathbf{internal}$ and Temp$_\mathbf{external}$", fontweight = 'bold')
-        self.graph2.axes.set_xlabel("Time recorded", fontweight = 'bold')
-        self.graph2.axes.set_ylabel('Temp$_\mathbf{internal}$ ($\circ$C)', color = 'tab:olive', fontweight = 'bold')
-        self.graph2.axes.plot(*splitSerToArr(temp1Line.dropna()), 'y', label = 'Temp$_{int}$', linestyle ='dashed', marker ="o")
-        self.graph2.axes.tick_params(axis='y', labelcolor='tab:olive')
-        
-        self.axes2.set_ylabel('Temp$_\mathbf{external}$ ($\circ$C)', color = 'tab:green', fontweight = 'bold')
-        self.axes2.plot(*splitSerToArr(temp2Line.dropna()),'g', label = 'Temp$_{ext}$', linestyle ='dashed', marker = "v")
-        self.axes2.tick_params(axis='y', labelcolor = 'tab:green')
-        plt.setp(self.graph2.axes.get_xticklabels(), rotation = 30, horizontalalignment = 'right')
-        self.graph2.fig.legend(loc = 'upper right', bbox_to_anchor =(1.3,1.2), fancybox = True, shadow = True, ncol = 1, bbox_transform = self.graph2.axes.transAxes)
-        
-
-        self.graph3.axes.cla()
-        self.graph3.axes.set_title("pH", fontweight = 'bold')
-        self.graph3.axes.set_xlabel("Time recorded", fontweight = 'bold')
-        self.graph3.axes.set_ylabel('pH', color = 'tab:purple', fontweight = 'bold')
-        self.graph3.axes.plot(*splitSerToArr(pHLine.dropna()), 'm', label = 'pH', linestyle ='dashed', marker ="o")
-        self.graph3.axes.tick_params(axis='y', labelcolor='tab:purple')
-        plt.setp(self.graph3.axes.get_xticklabels(), rotation = 30, horizontalalignment = 'right')
-        self.graph3.axes.legend()
-        
-        self.graph1a.draw_idle()
-        self.graph1b.draw_idle()
-        self.graph2.draw_idle()
-        self.graph3.draw_idle()
         
     def check_onlineDisplay(self):
         if self.onlineDisplay.text() == 'POLLING AND DATA LOGGING STOPPED':
