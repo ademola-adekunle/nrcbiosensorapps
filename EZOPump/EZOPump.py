@@ -174,9 +174,230 @@ class CalibrationEntry(QDialog):
 
 class OtherDispensingOptions(QDialog):
     
-    def __init__(self):
-        super().__init__()
+    def __init__(self,parent):
+        super().__init__(parent)
         uic.loadUi(str(uis) +'/OtherDispensingOptionsDialog.ui',self)
+        
+        self.parent = parent
+        self.volDispense = self.findChild(QRadioButton,"volDispense")
+        self.doseOverTime = self.findChild(QRadioButton,"doseOverTime")
+        self.constFlowRate = self.findChild(QRadioButton,"constFlowRate")
+        
+        self.volDispense.setChecked(True)
+        
+        self.cont = self.findChild(QPushButton,"cont")
+        self.cancel = self.findChild(QPushButton, "cancel")
+        
+        self.cont.clicked.connect(self.openDispenseDialogs)
+        self.cancel.clicked.connect(self.close)
+        
+    def openDispenseDialogs(self):
+        if self.volDispense.isChecked():
+            
+            dispense_dlg = VolumeDispensing(self.parent)
+            self.close()
+            
+            try:
+                dispense_dlg.exec_()
+            except Exception:
+                warning = QMessageBox.warning(self,"Dialog failed to execute","Volume dispensing failed to open.\nCheck file permissions and file locations")
+
+        elif self.doseOverTime.isChecked():
+            dispense_dlg = DoseOverTime(self.parent)
+            self.close()
+            
+            try:
+                dispense_dlg.exec_()
+            except Exception:
+                warning = QMessageBox.warning(self,"Dialog failed to execute","Dose over time failed to open.\nCheck file permissions and file locations")
+
+        elif self.constFlowRate.isChecked():
+            dispense_dlg = ConstantFlowRate(self.parent)
+            self.close()
+            
+            try:
+                dispense_dlg.exec_()
+            except Exception:
+                warning = QMessageBox.warning(self,"Dialog failed to execute","Dose over time failed to open.\nCheck file permissions and file locations")
+
+        else:
+            warning = QMessageBox.warning(self, "No dispense option selected", "No dispensing option was selected.\nIf you would like to select a dispensing option, please try again.")
+
+class VolumeDispensing(QDialog):
+    
+    def __init__(self, parent):
+        super().__init__(parent)
+        uic.loadUi(str(uis) +'/volumeDispensing.ui',self)
+        
+        self.parent = parent 
+        self.dispenseVol = self.findChild(QDoubleSpinBox,'dispenseVol')
+        self.dispenseButton = self.findChild(QPushButton, 'dispenseButton')
+        self.cancel = self.findChild(QPushButton, 'cancel')
+        
+        self.dispenseButton.clicked.connect(self.dispense)
+        self.cancel.clicked.connect(self.close)
+        
+    def dispense(self):
+        global pumpAddress, continuousDispensing, isDispensing
+        
+        if self.dispenseVol.value() < 0.5:
+            wrongValue = QMessageBox.warning(self, 'Error! Dispense Value too low', 'Dispense value is too low.\nThe minimum dispensing value is 0.5 mL.')
+        else:
+            
+            if continuousDispensing == True or isDispensing == True:
+                cont = QMessageBox.question(self, 'Volume Dispensing', 'Volume dispensing will stop all other dispensing operations.\nWould you like to dispense?', QMessageBox.Yes | QMessageBox.No)
+            else:
+                cont = QMessageBox.question(self, 'Volume Dispensing', 'Would you like to dispense ' +str(self.dispenseVol.value()) + 'mL?', QMessageBox.Yes | QMessageBox.No)
+                
+            if cont == QMessageBox.Yes:
+                if continuousDispensing == True or isDispensing == True:
+                    i2c_readwrite(pumpAddress, "X")
+                if continuousDispensing == True:
+                    self.parent.start_stopButton.toggle()
+                    self.parent.start_stopButton.setStyleSheet("background-color: green")
+                    self.parent.start_stopButton.setText('START')
+                    continuousDispensing = False
+                    
+                if isDispensing == True:
+                    isDispensing = False
+                    
+                self.close()
+                
+                formattedFloat = "{:.2f}".format(self.dispenseVol.value())
+                msg = i2c_readwrite(pumpAddress, "D," + str(self.dispenseVol.value()))
+                
+                #Wait text
+                wait = QDialog()
+                wait.setModal(True)
+                wait.setWindowTitle("Dispensing")
+                width = 500
+                height = 100
+                wait.setFixedSize(width, height)
+                #wait.setWindowIcon(QtGui.QIcon(str(uis) + '/NRCLogo.ico'))
+                
+                #Set DialogText Settings and stlying
+                waitText = QLabel(wait)
+                waitText.setGeometry(QRect(50, 30, 500, 200))
+                waitText.setStyleSheet("font-family: Century Gothic")
+                waitText.setAlignment(Qt.AlignLeading|Qt.AlignLeft|Qt.AlignTop)
+                waitText.setText("Dispensing... \nPlease wait until the operation is over.")
+                
+                #Show Text and wait until loaded parameter is true (Aka, main page is done loading)
+                wait.show()
+                loop = QEventLoop()
+                QTimer.singleShot(500, loop.quit) #Pauses UI for half a second and loops
+                loop.exec_()
+
+                while True:
+                    msg = i2c_readwrite(pumpAddress, "D,?")
+                    if msg == "?D,"+ formattedFloat +",0":
+                        break
+                    
+                wait.close()
+                self.parent.update_statusbarSignal.emit(str(self.dispenseVol.value()) +"mL dispensed", True)
+            else:
+                self.parent.update_statusbarSignal.emit("", True)
+
+                
+class DoseOverTime(QDialog):
+    
+    def __init__(self,parent):
+        super().__init__(parent)
+        uic.loadUi(str(uis) +'/doseTime.ui',self)
+        
+        self.parent = parent
+        self.dispenseVol = self.findChild(QDoubleSpinBox,'dispenseVol')
+        self.timeDuration = self.findChild(QSpinBox,'timeDuration')
+        self.dispenseButton = self.findChild(QPushButton, 'dispenseButton')
+        self.cancel = self.findChild(QPushButton, 'cancel')
+        
+        self.dispenseButton.clicked.connect(self.dispense)
+        self.cancel.clicked.connect(self.close)
+        
+    def dispense(self):
+        global pumpAddress, continuousDispensing, isDispensing
+        
+        if self.dispenseVol.value() < 0.5:
+            wrongValue = QMessageBox.warning(self, 'Error! Dispense Value too low', 'Dispense value is too low.\nThe minimum dispensing value is 0.5 mL.')
+        elif self.dispenseVol.value()/self.timeDuration.value() > 50:
+            wrongValue = QMessageBox.warning(self, 'Error! Flow rate is too large', 'The maximum flow rate for this device is 50mL per minute.')
+        else:
+            
+            if continuousDispensing == True or isDispensing == True:
+                cont = QMessageBox.question(self, 'Dose over Time', 'Dose over Time will stop all other dispensing operations.\nWould you like to dispense?', QMessageBox.Yes | QMessageBox.No)
+            
+            else:
+                cont = QMessageBox.question(self, 'Dose over Time', 'Would you like to dispense '+ str(self.dispenseVol.value()) +"mL dispensing over " +str(self.timeDuration.value()) + 'min(s)?', QMessageBox.Yes | QMessageBox.No)
+                
+            if cont == QMessageBox.Yes:
+                if continuousDispensing == True or isDispensing == True:
+                    i2c_readwrite(pumpAddress, "X")
+                    
+                if continuousDispensing == True:
+                    self.parent.start_stopButton.toggle()
+                    self.parent.start_stopButton.setStyleSheet("background-color: green")
+                    self.parent.start_stopButton.setText('START')
+                    continuousDispensing = False
+                    
+                isDispensing = True
+                    
+                self.close()
+                msg = i2c_readwrite(pumpAddress, "D," + str(self.dispenseVol.value()) + "," + str(self.timeDuration.value()))
+                self.parent.update_statusbarSignal.emit(str(self.dispenseVol.value()) +"mL dispensing over " +str(self.timeDuration.value()) +"min(s)", True)
+            
+            else:
+                self.parent.update_statusbarSignal.emit("", True)
+
+class ConstantFlowRate(QDialog):
+    
+    def __init__(self, parent):
+        super().__init__(parent)
+        uic.loadUi(str(uis) +'/constantFlowRate.ui',self)
+        
+        self.parent = parent
+        self.dispenseVolRate = self.findChild(QDoubleSpinBox,'dispenseVolRate')
+        self.timeDuration = self.findChild(QSpinBox,'timeDuration')
+        self.dispenseButton = self.findChild(QPushButton, 'dispenseButton')
+        self.cancel = self.findChild(QPushButton, 'cancel')
+        
+        self.dispenseButton.clicked.connect(self.dispense)
+        self.cancel.clicked.connect(self.close)
+        
+    def dispense(self):
+        global pumpAddress, continuousDispensing, isDispensing
+        
+        if self.dispenseVolRate.value() < 0.5:
+            wrongValue = QMessageBox.warning(self, 'Error! Dispense Value too low', 'Dispense value is too low.\nThe minimum dispensing value is 0.5 mL.')
+        elif round(self.dispenseVolRate.value()/self.timeDuration.value()) > 50:
+            wrongValue = QMessageBox.warning(self, 'Error! Flow rate is too large', 'The maximum flow rate for this device is 50mL per minute.')
+        else:
+            
+            if continuousDispensing == True or isDispensing == True:
+                cont = QMessageBox.question(self, 'Constant Flow Rate', 'Constant flow rate will stop all other dispensing operations.\nWould you like to dispense?', QMessageBox.Yes | QMessageBox.No)
+            
+            else:
+                cont = QMessageBox.question(self, 'Constant Flow Rate', 'Would you like to dispense '+ str(self.dispenseVolRate.value()) +"mL/min dispensing over " +str(self.timeDuration.value()) + 'min(s)?', QMessageBox.Yes | QMessageBox.No)
+                
+            if cont == QMessageBox.Yes:
+                if continuousDispensing == True or isDispensing == True:
+                    i2c_readwrite(pumpAddress, "X")
+                    
+                if continuousDispensing == True:
+                    self.parent.start_stopButton.toggle()
+                    self.parent.start_stopButton.setStyleSheet("background-color: green")
+                    self.parent.start_stopButton.setText('START')
+                    continuousDispensing = False
+                    
+                isDispensing = True
+                
+                self.close()
+                msg = i2c_readwrite(pumpAddress, "DC," + str(self.dispenseVolRate.value()) + "," + str(self.timeDuration.value()))
+                self.parent.update_statusbarSignal.emit(str(self.dispenseVolRate.value()) +"mL dispensing over " +str(self.timeDuration.value()) +"min(s)", True)
+            
+            else:
+                self.parent.update_statusbarSignal.emit("", True)
+
+
 #------------------------------------------------------------------------------#
 # Main Window
 #------------------------------------------------------------------------------#
@@ -184,7 +405,7 @@ class PumpMainPage(QMainWindow):
     update_statusbarSignal = pyqtSignal(str,bool)
 
     def __init__(self):
-        global device_list, pumpAddress, continuousDispensing
+        global device_list, pumpAddress, continuousDispensing, isDispensing
         super().__init__()
         
         device_list = get_devices()
@@ -209,7 +430,25 @@ class PumpMainPage(QMainWindow):
         
         uic.loadUi(str(uis) +"/EzoMainPage.ui", self)
         
+        temp = i2c_readwrite(pumpAddress, "D,?")
+        check = temp.split(",")
+        
         continuousDispensing = False
+        self.start_stopButton.setStyleSheet("background-color: green")
+        self.start_stopButton.setText('START')
+        
+        if check[1] == '*' and check[2] == '1':
+            continuousDispensing = True
+            self.start_stopButton.setStyleSheet("background-color: red")
+            self.start_stopButton.setText('STOP')
+            self.start_stopButton.toggle()
+            self.update_statusbarSignal.emit("Continuous dispensing", True)
+
+        else:
+            if check[2] == '1':
+                temp = i2c_readwrite(pumpAddress, "X")
+        
+        isDispensing = False
         
         self.calibratePumpButton = self.findChild(QPushButton,"calibratePumpButton")
         self.openOtherOptions = self.findChild(QPushButton, 'openOtherOptions')
@@ -220,9 +459,6 @@ class PumpMainPage(QMainWindow):
         
         self.startupVol = self.findChild(QDoubleSpinBox, 'startupVol')
         self.startupVol.setValue(defaultStartUpDispense)
-        
-        self.start_stopButton.setStyleSheet("background-color: green")
-        self.start_stopButton.setText('START')
         
         self.update_statusbarSignal.connect(self.update_statusbar)
 
@@ -240,15 +476,20 @@ class PumpMainPage(QMainWindow):
         self.statusbar.showMessage(text)
     
     def calibratePump(self):
-        global continuousDispensing, calibrationCancelled, pumpAddress
+        global continuousDispensing, isDispensing, calibrationCancelled, pumpAddress
         contCalib = QMessageBox.question(self, 'Pump Calibration', 'Pump calibration will stop all dispensing operations.\nWould you like to calibrate the pump?', QMessageBox.Yes | QMessageBox.No)
         
         if contCalib == QMessageBox.Yes:
+            if continuousDispensing == True or isDispensing == True:
+                msg = i2c_readwrite(pumpAddress, "X")
+                
             if continuousDispensing == True:
                 self.start_stopButton.toggle()
                 self.start_stopButton.setStyleSheet("background-color: green")
                 self.start_stopButton.setText('START')
-                msg = i2c_readwrite(pumpAddress, "X")
+                continuousDispensing = False
+            if isDispensing == True:
+                isDispensing = False
             
             calibForm = CalibrationForm()
         
@@ -265,7 +506,7 @@ class PumpMainPage(QMainWindow):
 
 
     def openOtherOptionsDialog(self):
-        optionsDialog = OtherDispensingOptions()
+        optionsDialog = OtherDispensingOptions(self)
         
         try:
             optionsDialog.exec_()
