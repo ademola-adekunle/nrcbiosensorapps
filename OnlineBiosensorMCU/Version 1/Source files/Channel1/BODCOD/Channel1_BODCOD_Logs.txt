@@ -1,4 +1,1 @@
 Date			Battery Voltage 	MinV	 	MaxV	 Temperature 		R1		 R2		Capacitance		RLoad		BODV			CODV		BOD r2		BOD fit eqn				BOD fit type		COD r2					COD fit eqn			COD fit type
-
-2021-04-21 13:15:37		4850		-793		666		21.7		0		0		2147483647		492		91944472110359.19		118925131425.89		1.0		BOD = exp(-0.298528)*exp(3.216852*Y)	Exponential	0.98		COD = exp(2.020415)*exp(2.327714*Y)	Exponential	
-2021-04-21 13:20:26		4925		15		28		21.4		47		39		2147483647		492		160573648866464.56		178029660153.36		1.0		BOD = exp(-0.298528)*exp(3.216852*Y)	Exponential	0.98		COD = exp(2.020415)*exp(2.327714*Y)	Exponential	

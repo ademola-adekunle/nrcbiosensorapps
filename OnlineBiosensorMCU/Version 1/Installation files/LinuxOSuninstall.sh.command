@@ -16,7 +16,6 @@ sudo rm "BiosensorApplication.desktop"
 #Cleaning up desktop
 cd $HOME
 cd Desktop
-rm "BiosensorApplication.desktop"
 rm "Biosensor Channel1 Data"
 rm "Biosensor Channel2 Data"
 

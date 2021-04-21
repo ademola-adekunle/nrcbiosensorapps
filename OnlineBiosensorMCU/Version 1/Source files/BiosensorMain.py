@@ -2087,14 +2087,17 @@ class MainPage(QWidget):
                         time.sleep(0.1)
                         while True:
                             text = serial_objects[channel].readline().decode().replace('\x00','')
-                            print(text)
+                            #print(text)
                             tempArr.append(text)
                             if 'Send ? command' in text:
                                 break
                             endcheck = time.time()
                             if endcheck - startcheck >= 300:
-                                print('exiting')
+                                #print('exiting')
                                 sys.exit()
+                                self.close()
+                                if(platform.system() == 'Linux'):
+                                    os.system('sudo shutdown -r now')
                             loop = QEventLoop()
                             QTimer.singleShot(1000, loop.quit)
                             loop.exec_()
@@ -2103,7 +2106,7 @@ class MainPage(QWidget):
                         for x in tempArr:
                             if 'ERROR: Join attempts failed, reset to attempt again' in x:
                                 loraFailFlag = True
-                        print(tempArr) 
+                        #print(tempArr) 
                         if loraFailFlag:
                             loraStartUpCheck[channel] = False
                         else:
@@ -2112,7 +2115,7 @@ class MainPage(QWidget):
                     else:
                         loraStartUpCheck[channel] = False
                         self.updateStatusBarSignal.emit(False,loraStartUpCheck[channel])
-                    print('exit')
+                    #print('exit')
                     
                     
                     if (self.parent.isVisible() == False) and loaded2 == False and len(serial_objects) == 2:
@@ -2233,7 +2236,7 @@ class MainPage(QWidget):
                         
                     #Read all and split based on carriage return. 
                     temp = read_all(serial_objects[channel], False).split(b"\r")
-                    print(temp)
+                    #print(temp)
                     empty = read_all(serial_objects[channel], True)
                     #Parse through list and find outputs
                     for x in temp:

@@ -82,14 +82,6 @@ echo 'Exec="/usr/share/Source files/runBiosensor.sh"'>>/home/pi/.config/autostar
 
 cd $HOME
 cd Desktop
-echo '[Desktop Entry]' > /home/pi/Desktop/BiosensorApplication.desktop
-echo 'Type = Application' >> /home/pi/Desktop/BiosensorApplication.desktop
-echo 'Encoding = UTF-8' >> /home/pi/Desktop/BiosensorApplication.desktop
-echo 'Name = Biosensor Data Acquisition ' >> /home/pi/Desktop/BiosensorApplication.desktop
-echo 'Comment = Biosensor Data Acquisition' >> /home/pi/Desktop/BiosensorApplication.desktop
-echo 'Exec = "/usr/share/Source files/runBiosensor.sh"' >> /home/pi/Desktop/BiosensorApplication.desktop
-echo 'Icon = /usr/share/Source files/UI_Forms/NRCLogo.png' >> /home/pi/Desktop/BiosensorApplication.desktop
-echo 'Terminal = false' >> /home/pi/Desktop/BiosensorApplication.desktop
 
 ln -s "/usr/share/Source files/Channel1" "Biosensor Channel1 Data"
 ln -s "/usr/share/Source files/Channel2" "Biosensor Channel2 Data"
