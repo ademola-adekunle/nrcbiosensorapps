@@ -1,0 +1,109 @@
+Date Time COD_fit_eqn BOD_fit_eqn
+2020-07-06 12:26:49 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2020-07-06 12:26:53 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2020-07-06 12:26:58 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2020-07-06 12:27:14 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2020-07-06 12:27:39 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2020-07-06 12:27:43 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+Date Time COD_fit_eqn BOD_fit_eqn
+2020-07-06 12:34:40 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2020-07-06 12:34:47 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+Date Time COD_fit_eqn BOD_fit_eqn
+2020-07-06 12:35:56 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2020-07-06 12:39:32 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2020-07-06 12:40:58 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2020-07-06 14:17:22 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2020-07-07 15:27:14 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2020-07-08 10:19:52 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2020-07-08 14:07:27 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2020-07-10 10:59:41 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2020-07-13 11:36:06 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+Date Time COD_fit_eqn BOD_fit_eqn
+2020-07-13 11:36:06 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+Date Time COD_fit_eqn BOD_fit_eqn
+2020-07-13 11:41:15 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2020-07-13 11:41:19 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+Date Time COD_fit_eqn BOD_fit_eqn
+2020-07-13 11:41:20 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2020-07-13 11:41:28 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2020-07-13 11:42:28 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+Date Time COD_fit_eqn BOD_fit_eqn
+2020-07-13 11:44:39 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+Date Time COD_fit_eqn BOD_fit_eqn
+2020-07-13 11:50:35 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+Date Time COD_fit_eqn BOD_fit_eqn
+2020-07-13 12:12:27 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2020-07-13 12:26:38 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+Date Time COD_fit_eqn BOD_fit_eqn
+2020-07-13 12:26:38 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+Date Time COD_fit_eqn BOD_fit_eqn
+2020-07-14 03:57:45 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+Date Time COD_fit_eqn BOD_fit_eqn
+2020-07-20 09:19:42 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2020-07-20 13:28:29 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+Date Time COD_fit_eqn BOD_fit_eqn
+2020-07-20 13:28:34 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+Date Time COD_fit_eqn BOD_fit_eqn
+2020-07-20 14:13:16 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+Date Time COD_fit_eqn BOD_fit_eqn
+2020-07-21 13:03:29 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2020-07-21 13:24:48 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+Date Time COD_fit_eqn BOD_fit_eqn
+2020-07-21 13:24:48 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2020-07-21 13:36:20 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+Date Time COD_fit_eqn BOD_fit_eqn
+2020-07-21 13:36:23 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2020-07-21 13:37:23 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+Date Time COD_fit_eqn BOD_fit_eqn
+2020-07-21 13:37:24 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2020-07-21 13:37:26 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+Date Time COD_fit_eqn BOD_fit_eqn
+2020-07-21 13:37:26 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2020-07-21 13:46:20 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+Date Time COD_fit_eqn BOD_fit_eqn
+2020-07-21 13:46:20 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2020-07-21 15:20:41 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+Date Time COD_fit_eqn BOD_fit_eqn
+2020-07-21 15:20:44 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+Date Time COD_fit_eqn BOD_fit_eqn
+2020-07-21 15:21:24 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2020-07-21 15:23:08 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+Date Time COD_fit_eqn BOD_fit_eqn
+2020-07-21 15:23:08 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2020-07-21 15:46:05 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+Date Time COD_fit_eqn BOD_fit_eqn
+2020-07-21 15:46:09 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+Date Time COD_fit_eqn BOD_fit_eqn
+2020-07-21 15:46:53 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2020-07-21 15:47:01 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+Date Time COD_fit_eqn BOD_fit_eqn
+2020-07-21 15:47:01 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+Date Time COD_fit_eqn BOD_fit_eqn
+2021-02-03 12:40:03 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+Date Time COD_fit_eqn BOD_fit_eqn
+2021-02-03 12:46:28 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2021-02-03 12:46:33 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2021-02-03 12:46:34 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2021-02-03 12:46:37 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2021-02-03 12:46:38 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+Date Time COD_fit_eqn BOD_fit_eqn
+2021-02-03 14:42:12 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2021-02-03 14:42:23 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+Date Time COD_fit_eqn BOD_fit_eqn
+2021-02-03 14:44:22 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+Date Time COD_fit_eqn BOD_fit_eqn
+2021-02-03 14:46:33 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+Date Time COD_fit_eqn BOD_fit_eqn
+2021-02-03 15:01:39 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+Date Time COD_fit_eqn BOD_fit_eqn
+2021-02-03 15:02:12 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+Date Time COD_fit_eqn BOD_fit_eqn
+2021-02-03 15:03:45 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2021-02-03 15:04:13 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2021-02-03 15:04:50 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+Date Time COD_fit_eqn BOD_fit_eqn
+2021-03-03 11:57:03 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2021-03-03 11:57:10 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+Date Time COD_fit_eqn BOD_fit_eqn
+2021-03-03 13:48:25 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)
+2021-03-03 13:49:31 COD = exp(2.020415)*exp(2.327714*Y) BOD = exp(-0.298528)*exp(3.216852*Y)

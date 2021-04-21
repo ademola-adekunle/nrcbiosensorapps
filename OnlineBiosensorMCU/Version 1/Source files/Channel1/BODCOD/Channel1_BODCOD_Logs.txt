@@ -1,0 +1,2 @@
+Date			Battery Voltage 	MinV	 	MaxV	 Temperature 		R1		 R2		Capacitance		RLoad		BODV			CODV		BOD r2		BOD fit eqn				BOD fit type		COD r2					COD fit eqn			COD fit type
+

@@ -1,0 +1,2 @@
+Date			Battery Voltage 	MinV	 	MaxV	 Temperature 		R1		 R2		Capacitance		RLoad
+		

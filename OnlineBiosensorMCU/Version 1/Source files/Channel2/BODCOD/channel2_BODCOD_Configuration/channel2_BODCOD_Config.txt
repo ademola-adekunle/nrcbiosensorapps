@@ -1,0 +1,2 @@
+Date		 Min V 	Max V 	OC Sample Time 	CC Sample Time 	OC Min Time Limit  CC Min Time Limit 	OC Sample Time Max	CC Sample Time Max	OC FracV	CC FracV	Alpha 	Episilon 	Time Reference 	Time Interval  Min Time Interval Epsilon Max Count 	RLoad CalibADCV Reference  CalibADC Zero  CalibADC Max  Device ID Acquisition Rate
+
