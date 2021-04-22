@@ -615,7 +615,7 @@ class Ui(QWidget): #Set up Ui Classes
         waitText.setGeometry(QRect(50, 30, 650, 200))
         waitText.setStyleSheet("font-family: Century Gothic")
         waitText.setAlignment(Qt.AlignLeading|Qt.AlignLeft|Qt.AlignTop)
-        waitText.setText("Loading... \nPlease wait at most 5 minutes until the operation is over.\nAfter 5 minutes have passed and the program is still loading,\nplease restart your RPI.")
+        waitText.setText("Loading... \nPlease wait at most 5 minutes until the operation is over.\nAfter 5 minutes have passed and the program is still loading,\nplease restart your device.")
         
         #Show Text and wait until loaded parameter is true (Aka, main page is done loading)
         wait.show()
@@ -2039,7 +2039,7 @@ class MainPage(QWidget):
                     serial_objects[channel].read(2048)
                     while(serial_objects[channel].read(1) == b''):
                         serial_objects[channel].write(b'GetAllParams\r')
-                        #print('waiting for first read')
+                        print('waiting for first read')
                         time.sleep(1)
                     #Flush the input buffer
                     text = read_all(serial_objects[channel], True)
@@ -2049,7 +2049,7 @@ class MainPage(QWidget):
                     serial_objects[channel].write(b"GetAllParams\r")
                     time.sleep(0.1)
                     text = read_all(serial_objects[channel], True).split(b"\r")
-                    #print(text)
+                    print(text)
                     #Set MCU parameters to readings
                     for i in range(22):
                         x = text[i].decode()
@@ -2087,17 +2087,17 @@ class MainPage(QWidget):
                         time.sleep(0.1)
                         while True:
                             text = serial_objects[channel].readline().decode().replace('\x00','')
-                            #print(text)
+                            print(text)
                             tempArr.append(text)
                             if 'Send ? command' in text:
                                 break
                             endcheck = time.time()
                             if endcheck - startcheck >= 300:
-                                #print('exiting')
-                                sys.exit()
                                 self.close()
                                 if(platform.system() == 'Linux'):
                                     os.system('sudo shutdown -r now')
+                                else:
+                                    sys.exit()
                             loop = QEventLoop()
                             QTimer.singleShot(1000, loop.quit)
                             loop.exec_()
@@ -2106,7 +2106,7 @@ class MainPage(QWidget):
                         for x in tempArr:
                             if 'ERROR: Join attempts failed, reset to attempt again' in x:
                                 loraFailFlag = True
-                        #print(tempArr) 
+                        print(tempArr) 
                         if loraFailFlag:
                             loraStartUpCheck[channel] = False
                         else:
@@ -2115,7 +2115,7 @@ class MainPage(QWidget):
                     else:
                         loraStartUpCheck[channel] = False
                         self.updateStatusBarSignal.emit(False,loraStartUpCheck[channel])
-                    #print('exit')
+                    print('exit')
                     
                     
                     if (self.parent.isVisible() == False) and loaded2 == False and len(serial_objects) == 2:
