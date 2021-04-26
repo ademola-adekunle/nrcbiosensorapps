@@ -29,6 +29,8 @@ import time, datetime
 from koradserial import KoradSerial
 from configparser import ConfigParser
 
+import piplates.TINKERplate as Tink
+
 import numpy as np
 import pandas as pd
 import io
@@ -142,6 +144,7 @@ def INI_write(): # function to write an INI file
     global psVoltage, psCurrentMax, psVoltageMax, psVoltage2, psCurrentMax2, psVoltageMax2,runPS, dLogInterval, dAqInterval, dAqON, ovp_advset, ocp_advset, ocp_advset2, ovp_advset2, ps_outputStatus1, ps_outputStatus2, koradports, fileName, data_points_int
     global graph1a_V1_Up, graph1a_V1_Down, graph1a_V2_Up, graph1a_V2_Down, graph1b_C1_Up, graph1b_C1_Down, graph1b_C2_Up, graph1b_C2_Down        
     global graph2_T1_Up, graph2_T1_Down, graph2_T2_Up, graph2_T2_Down, graph3_pH_Up, graph3_pH_Down
+    global pHControlStatus, pHSetupPoint, pHActiveTime
     
     cfgfile = open(resourcepath(str(inis) + "/psSettings.ini"),'w')
     parser = ConfigParser()
@@ -166,6 +169,9 @@ def INI_write(): # function to write an INI file
     parser.set('Settings', 'dLogInterval', str(dLogInterval))
     parser.set('Settings', 'dAqInterval', str(dAqInterval))
     parser.set('Settings', 'dAqON', str(dAqON))
+    parser.set('Settings', 'pHControlStatus', str(pHControlStatus))
+    parser.set('Settings', 'pHSetupPoint', str(pHSetupPoint))
+    parser.set('Settings', 'pHActiveTime', str(pHActiveTime))
     parser.set('Settings', 'datalog filename', fileName)
     
     """
@@ -225,6 +231,7 @@ def INI_read(): # function to read an INI file
     global ps, psVoltage, psCurrentMax, psVoltageMax, psVoltage2, psCurrentMax2, psVoltageMax2, runPS, dLogInterval, dAqInterval, dAqON, ocp_advset, ovp_advset, ocp_advset2, ovp_advset2, ps_outputStatus1, ps_outputStatus2, koradports, fileName, data_points_int
     global graph1a_V1_Up, graph1a_V1_Down, graph1a_V2_Up, graph1a_V2_Down, graph1b_C1_Up, graph1b_C1_Down, graph1b_C2_Up, graph1b_C2_Down        
     global graph2_T1_Up, graph2_T1_Down, graph2_T2_Up, graph2_T2_Down, graph3_pH_Up, graph3_pH_Down
+    global pHControlStatus, pHSetupPoint, pHActiveTime
     
     parser = ConfigParser()
     parser.read(resourcepath(str(inis) + "/psSettings.ini"))
@@ -240,6 +247,9 @@ def INI_read(): # function to read an INI file
     dLogInterval = float(parser.get("Settings", 'dLogInterval'))
     dAqInterval = float(parser.get("Settings", 'dAqInterval'))
     dAqON = (parser.getboolean("Settings", 'dAqON'))
+    pHControlStatus = parser.getboolean("Settings", 'pHControlStatus')
+    pHSetupPoint = float(parser.get("Settings", 'pHSetupPoint'))
+    pHActiveTime = int(parser.get("Settings", 'pHActiveTime'))
     fileName = parser.get("Settings", 'datalog filename')
 
     ovp_advset = parser.get("Advanced Settings", 'Over Voltage Protection (OVP)')
@@ -369,6 +379,9 @@ if platform.system() == "Windows": # if the operating system is windows
         dAqInterval = 1.0
         runPS = '0'
         dAqON = '0'
+        pHControlStatus = '0'
+        pHSetupPoint = 7
+        pHActiveTime = 5
         fileName = 'DataLoggingFile.txt'
         ocp_advset = 'off'
         ovp_advset = 'on'
@@ -417,6 +430,9 @@ elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'): # if
         dAqInterval = 1.0
         runPS = '0'
         dAqON = '0'
+        pHControlStatus = '0'
+        pHSetupPoint = 7
+        pHActiveTime = 5
         fileName = 'DataLoggingFile.txt'
         ocp_advset = 'off'
         ovp_advset = 'on'
@@ -565,6 +581,7 @@ class pHNavigation(QDialog):
         uic.loadUi(resourcepath(str(uis) + "/pHNavigation.ui"),self)
         self.setWindowIcon(QIcon(resourcepath(str(uis) + "/MECMonitoringIcon.ico"))) # Set ICONS
         
+        self.fail = True
         flag = False
         if platform.system() == 'Linux':
             device_list = get_devices() #Finds I2C devices
@@ -635,6 +652,7 @@ class pHNavigation(QDialog):
             
         if prevCalib == QMessageBox.Yes:
             #EXEC CALIBRATION PROGRAM DIALOG -> Adjust based on points
+            self.fail = False
             self.close()
             calib_dlg = CalibrationDialog(self, points, address)
             try:
@@ -672,6 +690,15 @@ class pHNavigation(QDialog):
                 return "Not configured"
         else:
             return "Not configured"
+    
+    def closeEvent(self, event):
+        global phCalibrationStatus
+        if phCalibrationStatus == False:
+            pass
+        elif phCalibrationStatus == True and self.fail == False:
+            pass
+        else:
+            phCalibrationStatus = False
         
 class CalibrationDialog(QDialog):
     update_TextSignal = pyqtSignal(str)
@@ -937,7 +964,75 @@ class pHMessageBox(QDialog):
     def closeEvent(self,event):
         global calibcont
         calibcont = True
+
+class PHControlDialog(QDialog):
+    
+    def __init__(self):
+        global pHControlStatus, pHSetupPoint, pHActiveTime
+        super().__init__(parent = None)
+        uic.loadUi(resourcepath(str(uis) + "/phControl.ui"),self)
+        self.setWindowIcon(QIcon(resourcepath(str(uis) + "/MECMonitoringIcon.ico"))) # Set ICONS
+        self.setWindowTitle(u"pH Control Dialog")
         
+        #FIND CHILDREN
+        self.pHSetPoint = self.findChild(QDoubleSpinBox, 'pHSetPoint')
+        self.pHTime = self.findChild(QSpinBox, 'pHTime')
+        
+        self.pHSetPoint.setValue(pHSetupPoint)
+        self.pHTime.setValue(pHActiveTime)
+        
+        #Initialize custom on_off switch -> If outputStatus is true -> set checked to true, otherwise false
+        self.on_off = ON_OFFSwitch()
+        if pHControlStatus:
+            self.on_off.setChecked(True)
+            self.temp = True
+            self.enableElements()
+            
+        else:
+            self.on_off.setChecked(False)
+            self.temp = False
+            self.disableElements()
+            
+        #Connect switch with function
+        self.on_off.clicked.connect(self.updatepHControlStatus)
+        #Disable button -> until edit has been pressed
+        self.infoLayout.addWidget(self.on_off, 0, 1)
+        
+        self.advsetButtonBox.accepted.connect(self.save)
+        self.advsetButtonBox.rejected.connect(self.reject)
+    
+    def disableElements(self):
+        self.pHSetPoint.setEnabled(False)
+        self.pHTime.setEnabled(False)
+        self.pHSetPoint.setStyleSheet("background-color: lightgray")
+        self.pHTime.setStyleSheet("background-color: lightgray")
+        
+    def enableElements(self):
+        self.pHSetPoint.setEnabled(True)
+        self.pHTime.setEnabled(True)
+        self.pHSetPoint.setStyleSheet("background-color: white")
+        self.pHTime.setStyleSheet("background-color: white")
+        
+    #Depending on PS_status change self.temp varaible
+    def updatepHControlStatus(self):
+        if self.on_off.isChecked():
+            self.temp = True
+            self.enableElements()
+        else:
+            self.temp = False
+            self.disableElements()
+    
+    def save(self):
+        global pHControlStatus, pHSetupPoint, pHActiveTime
+        
+        pHControlStatus = self.temp
+        pHSetupPoint = self.pHSetPoint.value()
+        pHActiveTime = self.pHTime.value()
+        
+        INI_write()
+        
+        self.close()
+    
 class AdvSettings(QDialog):
 
     def __init__(self, *args, **kwargs):
@@ -1344,7 +1439,7 @@ class MainWindow(QMainWindow):
         self.tempDisplay1 = self.findChild(QLineEdit,"tempDisplay1")
         self.tempDisplay2 = self.findChild(QLineEdit,"tempDisplay2")
         self.pHDisplay = self.findChild(QLineEdit,"pHDisplay")
-            
+        
         self.timer = QtCore.QTimer(self)
         self.timer.setInterval(1000) # Timer counts down one second
         self.timer.timeout.connect(self.on_timeout)
@@ -1384,7 +1479,17 @@ class MainWindow(QMainWindow):
         self.pHCalibration1.clicked.connect(self.pHCalibClicked)
         calibStart = False
         calibThread = False
-
+        
+        self.pHControl1.setEnabled(True)
+        self.pHControl1.clicked.connect(self.pHControl1Clicked)
+        
+        #FIND TINK AND TURN OFF OPEN CONTACTS JUST IN CASE
+        try:
+            Tink.relayOFF(0,1)
+            time.sleep(0.1)
+            Tink.relayOFF(0,2)
+        except Exception:
+            self.pHControl1.setEnabled(False)
         
         self.ps1StatusLabel = QLabel("Power source 1 -")
         self.ps1StatusLabel.setStyleSheet("border:0 ; color: black; font:italic;")
@@ -1661,6 +1766,15 @@ class MainWindow(QMainWindow):
         
         self.graph3.draw()
         self.graph3.flush_events()
+        
+    def pHControl1Clicked(self):
+        pHControl_dlg = PHControlDialog()
+        try:
+            pHControl_dlg.exec_()
+            
+        except Exception:
+            warning = QMessageBox.warning(self, "Error!", "Error opening dialog, please check if UI file is missing and permissions are granted.")
+
     
     def pHCalibClicked(self):
         global calibStart, calibThread
@@ -1686,15 +1800,19 @@ class MainWindow(QMainWindow):
         waitText.setStyleSheet("font-family: Century Gothic")
         waitText.setAlignment(Qt.AlignLeading|Qt.AlignLeft|Qt.AlignTop)
         
-        if dAqON == True:
-            waitText.setText("Loading pH calibration interface...\nPlease wait until the operation is over.")
+        waitText.setText("Loading pH calibration interface...\nPlease wait until the operation is over.")
+
         
         #Show Waiting Dialog
         wait.show()
+        
+        loop = QEventLoop()
+        QTimer.singleShot(500, loop.quit)
+        loop.exec_()
 
         while calibStart == False:
             loop = QEventLoop()
-            QTimer.singleShot(1000, loop.quit)
+            QTimer.singleShot(500, loop.quit)
             loop.exec_()
         
         calibStart = False
@@ -1770,6 +1888,13 @@ class MainWindow(QMainWindow):
             Then append dev1 and/or dev2 to korad ports
             Write new information to INI file
             """
+            try:
+                Tink.relaySTATE(0,1)
+                self.pHControl1.setEnabled(True)
+            except AssertionError:
+                tinkerFlag = False
+                self.pHControl1.setEnabled(False)
+                
             koradports = []
             check = True
             for i in range (len(serial_ports)): #Check all serial ports for Korad compatible ports#
@@ -2186,12 +2311,8 @@ class MainWindow(QMainWindow):
         global is_editing_setvals
         is_editing_setvals = True
 
-        displayfont = self.setvoltageDisplay.font()
-        displayfont.setPointSize(10)
-
         self.setvoltageDisplay.setReadOnly(False)
         self.setvoltageDisplay.setStyleSheet("background-color: white; font-weight: normal")
-        self.setvoltageDisplay.setFont(displayfont)
 
     def on_setOK_button_clicked(self):
         global is_editing_setvals, runPS, dAqFlag, psVoltage, psVoltageMax, psCurrentMax, settingsSaved1 
@@ -2206,12 +2327,8 @@ class MainWindow(QMainWindow):
             else:
                 is_editing_setvals = False
 
-                displayfont = self.setvoltageDisplay.font()
-                displayfont.setPointSize(10)
-
                 self.setvoltageDisplay.setReadOnly(True)
                 self.setvoltageDisplay.setStyleSheet("background-color: lightgray; font-weight: normal")
-                self.setvoltageDisplay.setFont(displayfont)
 
                 psVoltage = float(self.setvoltageDisplay.text())
                 INI_write()
@@ -2411,6 +2528,9 @@ class MainWindow(QMainWindow):
                 else:
                     polling = False
                     dAqON = False
+                    self.timer.stop()
+                    self.acquisitionTimerLabel.setText("--:--")
+                    self.timerLabel.setText('--:--')
                     self.startButton.setText('START')
                     self.onlineDisplay.setText('POLLING AND DATA LOGGING STOPPED')
                     self.tempDisplay1.setText('--')
@@ -2452,6 +2572,8 @@ class MainWindow(QMainWindow):
             self.onlineDisplay.setText('POLLING AND DATA LOGGING STOPPED')
             self.startButton.setChecked(False)
             self.timer.stop()
+            self.acquisitionTimerLabel.setText("--:--")
+            self.timerLabel.setText('--:--')
             
             try:
                 ps.output.off()
@@ -2469,6 +2591,7 @@ class MainWindow(QMainWindow):
             INI_write() # to update dAqON and runPS bools in INI
 
     def pollingStart(self):
+        global pHControlStatus, pHSetupPoint, pHActiveTime
         #TEMP_1 (Interior Temperature) : Address == 101
         #TEMP_2 (Exterior Temperature) : Address == 102
         #PH : ADDRESS == 99
@@ -2506,20 +2629,70 @@ class MainWindow(QMainWindow):
                 if float(pH) <= 0 or float(pH) > 15 :
                     pH = "No probe connected"
                     self.pHCalibration1.setEnabled(False)
+                    self.pHControl1.setEnabled(False)
                 else:
                     pH = str(round(float(pH),1))
                     self.pHCalibration1.setEnabled(True)
+                    self.pHControl1.setEnabled(True)
+
             except Exception: 
                 pH = "No probe connected"
                 self.pHCalibration1.setEnabled(False)
+                self.pHControl1.setEnabled(False)
 
         else:
             self.pHCalibration1.setEnabled(False)
+            self.pHControl1.setEnabled(False)
+        
+        #START CONTROL HERE if ENABLED
+        if pHControlStatus and not(pH == "Not configured" or pH == "No probe") and self.pHControl1.isEnabled():
+            tpHControl = threading.Thread(target= self.phControlFunction, args=(pH))
+            tpHControl.daemon = True
+            tpHControlstart()
         
         self.update_Temp1Signal.emit(temp1)
         self.update_Temp2Signal.emit(temp2)
         self.update_pHSignal.emit(pH)
     
+    def phControlFunction(self, pH):
+        global pHControlStatus, pHSetupPoint, pHActiveTime
+        
+        #RELAY 1 = ACID
+        #RELAY 2 = BASE
+        #OPEN CIRCUIT = OFF
+        #Closed circuit = ON
+        #LABEL RELAYS LATER
+        
+        tinkerFlag = True
+        try:
+            Tink.relaySTATE(0,1)
+            self.pHControl1.setEnabled(True)
+        except AssertionError:
+            tinkerFlag = False
+            self.pHControl1.setEnabled(False)
+                                   
+        time.sleep(0.1)                           
+        if tinkerFlag:
+            
+            if pH < pHSetupPoint:
+                Tink.relayON(0,2)
+                time.sleep(0.1)
+                Tink.relayOFF(0,1)
+                time.sleep(pHActiveTime)
+                Tink.relayOFF(0,2)
+                
+            elif pH > pHSetupPoint:
+                Tink.relayON(0,1)
+                time.sleep(0.1)
+                Tink.relayOFF(0,2)
+                time.sleep(pHActiveTime)
+                Tink.relayOFF(0,1)
+                
+            else:
+                Tink.relayOFF(0,1)
+                time.sleep(0.1)
+                Tink.relayOFF(0,2)
+
     def tempCompensation(self,device_id,adjust):
         global device_list
         foundDeviceFlag = False

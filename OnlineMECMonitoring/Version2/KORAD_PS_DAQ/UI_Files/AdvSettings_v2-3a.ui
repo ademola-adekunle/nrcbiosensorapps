@@ -163,11 +163,6 @@
         <height>0</height>
        </size>
       </property>
-      <property name="font">
-       <font>
-        <pointsize>10</pointsize>
-       </font>
-      </property>
       <property name="toolTip">
        <string>Set limit on maximum voltage for power source 1 (Max: 30V)</string>
       </property>
@@ -184,11 +179,6 @@
         <height>0</height>
        </size>
       </property>
-      <property name="font">
-       <font>
-        <pointsize>10</pointsize>
-       </font>
-      </property>
       <property name="toolTip">
        <string>Set max current for power source 1 (Max: 5A)</string>
       </property>
@@ -204,11 +194,6 @@
         <width>120</width>
         <height>0</height>
        </size>
-      </property>
-      <property name="font">
-       <font>
-        <pointsize>10</pointsize>
-       </font>
       </property>
       <property name="toolTip">
        <string>Set voltage for power source 1 (Max: 30V)</string>
@@ -249,11 +234,6 @@
         <width>120</width>
         <height>0</height>
        </size>
-      </property>
-      <property name="font">
-       <font>
-        <pointsize>10</pointsize>
-       </font>
       </property>
       <property name="toolTip">
        <string>Enable/Disable power source 1 channel outputs</string>
