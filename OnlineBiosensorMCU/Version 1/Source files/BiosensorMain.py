@@ -2033,122 +2033,122 @@ class MainPage(QWidget):
             
             while True:
                 if startUp == True:
-                    #try:
-                    #Checker reading -> Until I receive serial information in port -> Send Command, wait and read
-                    threadEnded[channel] = False
-                    serial_objects[channel].read(2048)
-                    while(serial_objects[channel].read(1) == b''):
-                        serial_objects[channel].write(b'GetAllParams\r')
-                        print('waiting for first read')
-                        time.sleep(1)
-                    #Flush the input buffer
-                    text = read_all(serial_objects[channel], True)
-                    #print(text)
-                    time.sleep(0.1)
-                    #Load Biosensor Params and separates into list 
-                    serial_objects[channel].write(b"GetAllParams\r")
-                    time.sleep(0.1)
-                    text = read_all(serial_objects[channel], True).split(b"\r")
-                    print(text)
-                    #Set MCU parameters to readings
-                    for i in range(22):
-                        x = text[i].decode()
-                        temp = re.findall(r"[+-]? *(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?", x)
-                        channel_params[channel][i] = temp[0].strip()
-                    for i in range(22,25):
-                        x = text[i].decode()
-                        channel_arr = x.split(":")
-                        channel_params[channel][i] = channel_arr[2].strip()
-                        
-                    
-                    #Set digital pot according to MCU parameter
-                    while True:
-                        serial_objects[channel].write(b"SetDigitalPot " + (channel_params[channel][16]).encode() + b"\r")
-                        time.sleep(0.05)
-                        text = serial_objects[channel].readline()
-                        text = text.decode().replace('\x00','')
-                        temp = re.findall(r"[+-]? *(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?", text)
-                        if not (temp[0] == None):
-                            channel_params[channel][16] = temp[0].strip()
-                            value = channel_params[channel][16]
-                            value = value.strip().encode()
-                            serial_objects[channel].write(b"SetParam RLoad "+ value + b"\r")
-                            time.sleep(0.01)
-                            text = serial_objects[channel].readline()
-                            break
-                        else:
-                            time.sleep(0.1)
-                            
-                    #IF PARAMs == 1 for lora -> wait 1 minute to let load
-                    if channel_params[channel][21].strip() == "1":
-                        startcheck = time.time()
-                        tempArr = []
-                        serial_objects[channel].write(b'Reset\r')
+                    try:
+                        #Checker reading -> Until I receive serial information in port -> Send Command, wait and read
+                        threadEnded[channel] = False
+                        serial_objects[channel].read(2048)
+                        while(serial_objects[channel].read(1) == b''):
+                            serial_objects[channel].write(b'GetAllParams\r')
+                            #print('waiting for first read')
+                            time.sleep(1)
+                        #Flush the input buffer
+                        text = read_all(serial_objects[channel], True)
+                        #print(text)
                         time.sleep(0.1)
-                        while True:
-                            text = serial_objects[channel].readline().decode().replace('\x00','')
-                            print(text)
-                            tempArr.append(text)
-                            if 'Send ? command' in text:
-                                break
-                            endcheck = time.time()
-                            if endcheck - startcheck >= 300:
-                                self.close()
-                                if(platform.system() == 'Linux'):
-                                    os.system('sudo shutdown -r now')
-                                else:
-                                    sys.exit()
-                            loop = QEventLoop()
-                            QTimer.singleShot(1000, loop.quit)
-                            loop.exec_()
+                        #Load Biosensor Params and separates into list 
+                        serial_objects[channel].write(b"GetAllParams\r")
+                        time.sleep(0.1)
+                        text = read_all(serial_objects[channel], True).split(b"\r")
+                        #print(text)
+                        #Set MCU parameters to readings
+                        for i in range(22):
+                            x = text[i].decode()
+                            temp = re.findall(r"[+-]? *(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?", x)
+                            channel_params[channel][i] = temp[0].strip()
+                        for i in range(22,25):
+                            x = text[i].decode()
+                            channel_arr = x.split(":")
+                            channel_params[channel][i] = channel_arr[2].strip()
                             
-                        loraFailFlag = False
-                        for x in tempArr:
-                            if 'ERROR: Join attempts failed, reset to attempt again' in x:
-                                loraFailFlag = True
-                        print(tempArr) 
-                        if loraFailFlag:
-                            loraStartUpCheck[channel] = False
+                        
+                        #Set digital pot according to MCU parameter
+                        while True:
+                            serial_objects[channel].write(b"SetDigitalPot " + (channel_params[channel][16]).encode() + b"\r")
+                            time.sleep(0.05)
+                            text = serial_objects[channel].readline()
+                            text = text.decode().replace('\x00','')
+                            temp = re.findall(r"[+-]? *(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?", text)
+                            if not (temp[0] == None):
+                                channel_params[channel][16] = temp[0].strip()
+                                value = channel_params[channel][16]
+                                value = value.strip().encode()
+                                serial_objects[channel].write(b"SetParam RLoad "+ value + b"\r")
+                                time.sleep(0.01)
+                                text = serial_objects[channel].readline()
+                                break
+                            else:
+                                time.sleep(0.1)
+                                
+                        #IF PARAMs == 1 for lora -> wait 1 minute to let load
+                        if channel_params[channel][21].strip() == "1":
+                            startcheck = time.time()
+                            tempArr = []
+                            serial_objects[channel].write(b'Reset\r')
+                            time.sleep(0.1)
+                            while True:
+                                text = serial_objects[channel].readline().decode().replace('\x00','')
+                                #print(text)
+                                tempArr.append(text)
+                                if 'Send ? command' in text:
+                                    break
+                                endcheck = time.time()
+                                if endcheck - startcheck >= 300:
+                                    self.close()
+                                    if(platform.system() == 'Linux'):
+                                        os.system('sudo shutdown -r now')
+                                    else:
+                                        sys.exit()
+                                loop = QEventLoop()
+                                QTimer.singleShot(1000, loop.quit)
+                                loop.exec_()
+                                
+                            loraFailFlag = False
+                            for x in tempArr:
+                                if 'ERROR: Join attempts failed, reset to attempt again' in x:
+                                    loraFailFlag = True
+                            print(tempArr) 
+                            if loraFailFlag:
+                                loraStartUpCheck[channel] = False
+                            else:
+                                loraStartUpCheck[channel] = True
+                            self.updateStatusBarSignal.emit(True,loraStartUpCheck[channel])
                         else:
-                            loraStartUpCheck[channel] = True
-                        self.updateStatusBarSignal.emit(True,loraStartUpCheck[channel])
-                    else:
-                        loraStartUpCheck[channel] = False
-                        self.updateStatusBarSignal.emit(False,loraStartUpCheck[channel])
-                    print('exit')
-                    
-                    
-                    if (self.parent.isVisible() == False) and loaded2 == False and len(serial_objects) == 2:
-                        loaded2 = True
-                        while loaded == False:
-                            loop = QEventLoop()
-                            QTimer.singleShot(500, loop.quit)
-                            loop.exec_()
-                    
-                    #If parent is hidden -> Show and set global loaded variable to true
-                    if (self.parent.isVisible() == False):
-                        self.parent.show()
-                        loaded = True
-                    
-                    #IF LORa FAILEd or sucess show a dialog
-                    #Set-up datastruct and parameters to be written into file 
-                    writeTime=str(datetime.datetime.now())[:19] #get date and time program starts
-                    parameterLog = ''
-                    parameterLog += writeTime
-                    parameterLog += ' '
-                    for i in range(25):
-                        parameterLog += channel_params[channel][i]
-                        parameterLog += '\t\t'
-                    parameterLog+='\n'
-                    
-                    text = ''
-                    text += parameterLog
-                    #Write into file (with the appropriate channel, mode, log vs parameter, and text being written)
-                    writeIntoFile(channel, mode, False, text)
-                    startUp = False
-                    threadEnded[channel] = True
-                    #except Exception:
-                        #self.disconnect.exec_()
+                            loraStartUpCheck[channel] = False
+                            self.updateStatusBarSignal.emit(False,loraStartUpCheck[channel])
+                        #print('exit')
+                        
+                        
+                        if (self.parent.isVisible() == False) and loaded2 == False and len(serial_objects) == 2:
+                            loaded2 = True
+                            while loaded == False:
+                                loop = QEventLoop()
+                                QTimer.singleShot(500, loop.quit)
+                                loop.exec_()
+                        
+                        #If parent is hidden -> Show and set global loaded variable to true
+                        if (self.parent.isVisible() == False):
+                            self.parent.show()
+                            loaded = True
+                        
+                        #IF LORa FAILEd or sucess show a dialog
+                        #Set-up datastruct and parameters to be written into file 
+                        writeTime=str(datetime.datetime.now())[:19] #get date and time program starts
+                        parameterLog = ''
+                        parameterLog += writeTime
+                        parameterLog += ' '
+                        for i in range(25):
+                            parameterLog += channel_params[channel][i]
+                            parameterLog += '\t\t'
+                        parameterLog+='\n'
+                        
+                        text = ''
+                        text += parameterLog
+                        #Write into file (with the appropriate channel, mode, log vs parameter, and text being written)
+                        writeIntoFile(channel, mode, False, text)
+                        startUp = False
+                        threadEnded[channel] = True
+                    except Exception:
+                        self.disconnect.exec_()
                         
                 #Main Loop Area
                 
