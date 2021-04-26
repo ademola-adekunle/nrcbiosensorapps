@@ -21,11 +21,16 @@ sudo apt-get install python3-pandas
 sudo apt-get install i2c-tools
 sudo pip3 install atlas-i2c
 sudo pip3 install qtwidgets
+sudo pip3 install Pi-Plates
 
 
 #Modifying Raspi-config for i2c
 sudo cat /boot/cmdline.txt
 sudo raspi-config nonint do_i2c 0
+sudo cat /boot/cmdline.txt
+sudo raspi-config nonint do_ssh 0
+sudo cat /boot/cmdline.txt
+sudo raspi-config nonint do_spi 0
 sudo cat /boot/cmdline.txt
 
 #Clone Repository
