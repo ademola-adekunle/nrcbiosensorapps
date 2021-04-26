@@ -22,6 +22,7 @@ sudo apt-get install i2c-tools
 sudo pip3 install atlas-i2c
 sudo pip3 install qtwidgets
 sudo pip3 install Pi-Plates
+sudo pip3 install pygame
 
 
 #Modifying Raspi-config for i2c
