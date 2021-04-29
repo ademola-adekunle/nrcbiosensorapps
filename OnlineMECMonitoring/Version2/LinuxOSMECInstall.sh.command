@@ -38,22 +38,22 @@ sudo cat /boot/cmdline.txt
 cd #HOME
 git clone https://github.com/ademola-adekunle/nrcbiosensorapps
 cd nrcbiosensorapps
-sudo cp -r "OnlineMECMonitoring" /usr/share
+sudo cp -r "OnlineMECMonitoring" /home/pi/.local/share
 cd $HOME
 sudo rm -r nrcbiosensorapps
 
-sudo chmod +x "/usr/share/OnlineMECMonitoring/Version2/runMECMonitoring.sh"
-
+sudo chmod +x "/home/pi/.local/share/OnlineMECMonitoring/Version2/runMECMonitoring.sh"
+sudo chmod -R 777 "/home/pi/.local/share/OnlineMECMonitoring/Version2/KORAD_PS_DAQ"
 mkdir -p /home/pi/.config/autostart/
 echo '[Desktop Entry]'>/home/pi/.config/autostart/MECMonitoring.desktop
 echo 'Type=Application'>>/home/pi/.config/autostart/MECMonitoring.desktop
 echo 'Name=MEC Monitoring'>>/home/pi/.config/autostart/MECMonitoring.desktop
-echo 'Exec="/usr/share/OnlineMECMonitoring/Version2/runMECMonitoring.sh"'>>/home/pi/.config/autostart/MECMonitoring.desktop
+echo 'Exec="/home/pi/.local/share/OnlineMECMonitoring/Version2/runMECMonitoring.sh"'>>/home/pi/.config/autostart/MECMonitoring.desktop
 
 cd $HOME
 cd Desktop
-ln -s "/usr/share/OnlineMECMonitoring/Version2/KORAD_PS_DAQ/Data_Logs" "MEC Monitoring Data Logs"
-ln -s "/usr/share/OnlineMECMonitoring/Version2/KORAD_PS_DAQ/INI" "MEC Monitoring Settings"
+ln -s "/home/pi/.local/share/OnlineMECMonitoring/Version2/KORAD_PS_DAQ/Data_Logs" "MEC Monitoring Data Logs"
+ln -s "/home/pi/.local/share/OnlineMECMonitoring/Version2/KORAD_PS_DAQ/INI" "MEC Monitoring Settings"
 
 cd $HOME
 cd ..
@@ -66,8 +66,8 @@ echo 'Type = Application' | sudo tee -a /usr/share/applications/MECMonitoringApp
 echo 'Encoding = UTF-8' | sudo tee -a /usr/share/applications/MECMonitoringApplication.desktop
 echo 'Name = MEC Monitoring ' | sudo tee -a /usr/share/applications/MECMonitoringApplication.desktop
 echo 'Comment = MEC Monitoring' | sudo tee -a /usr/share/applications/MECMonitoringApplication.desktop
-echo 'Exec = "/usr/share/OnlineMECMonitoring/Version2/runMECMonitoring.sh"' | sudo tee -a /usr/share/applications/MECMonitoringApplication.desktop
-echo 'Icon = /usr/share/OnlineMECMonitoring/Version2/KORAD_PS_DAQ/UI_Files/MECMonitoringIcon.ico' | sudo tee -a /usr/share/applications/MECMonitoringApplication.desktop
+echo 'Exec = "/home/pi/.local/share/OnlineMECMonitoring/Version2/runMECMonitoring.sh"' | sudo tee -a /usr/share/applications/MECMonitoringApplication.desktop
+echo 'Icon = /home/pi/.local/share/OnlineMECMonitoring/Version2/KORAD_PS_DAQ/UI_Files/MECMonitoringIcon.ico' | sudo tee -a /usr/share/applications/MECMonitoringApplication.desktop
 echo 'Terminal = false' | sudo tee -a /usr/share/applications/MECMonitoringApplication.desktop
 
 sudo lxpanelctl restart

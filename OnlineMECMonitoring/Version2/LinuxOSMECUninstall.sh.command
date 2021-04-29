@@ -2,12 +2,13 @@
 
 #Removing Repository
 cd $HOME
-cd ../..
-cd usr/share
+cd /home/pi/.local/share
 sudo rm -r "OnlineMECMonitoring"
 
-
 #Removing Start Menu option
+cd $HOME
+cd ../..
+cd /usr/share
 cd "applications"
 sudo rm "MECMonitoringApplication.desktop"
 
