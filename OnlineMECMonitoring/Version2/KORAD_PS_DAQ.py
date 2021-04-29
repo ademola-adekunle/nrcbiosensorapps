@@ -68,7 +68,7 @@ current = pathlib.Path().absolute()
 #------------------------------------------------------------------------------#
 # FUNCTIONS
 #------------------------------------------------------------------------------#
-def print_devices(device_list, device): #Print i2c devices adresses from i2c device list
+def print_devices(device_list, device): #Print i2c devices adresses from i2c device list (Not used in code - used for testing)
     for i in device_list:
         if(i == device):
             print(("--> " + i.get_device_info()).replace('\x00','')) #Indicate user selected device and replace null characters in string
@@ -291,43 +291,49 @@ def PS_writeDevice(channel):
     
     #If channel 1 was selected -> Write into PS1 new settings
     if (channel == 1):
-        PS = KoradSerial(dev1)
-        PS.channels[0].voltage = psVoltage #Set PS voltage to psVoltage
-        PS.channels[0].current = psCurrentMax #Set PS current to psCurrent Max
-        
-        
-        #If OVP is turned on -> turn on PS OVP, else: turn it off
-        if ovp_advset == 'on':
-            PS.over_voltage_protection.on()
+        try:
+            PS = KoradSerial(dev1)
+            PS.channels[0].voltage = psVoltage #Set PS voltage to psVoltage
+            PS.channels[0].current = psCurrentMax #Set PS current to psCurrent Max
+            
+            
+            #If OVP is turned on -> turn on PS OVP, else: turn it off
+            if ovp_advset == 'on':
+                PS.over_voltage_protection.on()
 
-        else:
-            PS.over_voltage_protection.off()
-        #If OCP is turned on -> Turn on PS OCP, else: turn it off
-        if ocp_advset == 'on':
-            PS.over_current_protection.on()
+            else:
+                PS.over_voltage_protection.off()
+            #If OCP is turned on -> Turn on PS OCP, else: turn it off
+            if ocp_advset == 'on':
+                PS.over_current_protection.on()
 
-        else:
-            PS.over_current_protection.off()
+            else:
+                PS.over_current_protection.off()
+        except Exception:
+            pass
     
     #If channel 2 was selected -> Write into PS2 new settings
     elif (channel == 2):
-        PS = KoradSerial(dev2)
-        PS.channels[0].voltage = psVoltage2 #Set PS voltage to psVoltage
-        PS.channels[0].current = psCurrentMax2 #Set PS current to psCurrent Max
-        
-        #If OVP is turned on -> turn on PS OVP, else: turn it off
-        if ovp_advset2 == 'on':
-            PS.over_voltage_protection.on()
-
-        else:
-            PS.over_voltage_protection.off()
+        try:
+            PS = KoradSerial(dev2)
+            PS.channels[0].voltage = psVoltage2 #Set PS voltage to psVoltage
+            PS.channels[0].current = psCurrentMax2 #Set PS current to psCurrent Max
             
-        #If OCP is turned on -> Turn on PS OCP, else: turn it off
-        if ocp_advset2 == 'on':
-            PS.over_current_protection.on()
+            #If OVP is turned on -> turn on PS OVP, else: turn it off
+            if ovp_advset2 == 'on':
+                PS.over_voltage_protection.on()
 
-        else:
-            PS.over_current_protection.off()
+            else:
+                PS.over_voltage_protection.off()
+                
+            #If OCP is turned on -> Turn on PS OCP, else: turn it off
+            if ocp_advset2 == 'on':
+                PS.over_current_protection.on()
+
+            else:
+                PS.over_current_protection.off()
+        except Exception:
+            pass
 
 def get_datalog():
     global fileName, datalogs
@@ -564,7 +570,7 @@ class ON_OFFSwitch(QtWidgets.QPushButton):
         painter.drawRoundedRect(sw_rect, radius, radius)
         painter.drawText(sw_rect, Qt.AlignCenter, label)
 
-class CustomVLine(QFrame):
+class CustomVLine(QFrame): #VLINE used for status bar
     def __init__(self):
         super(CustomVLine,self).__init__()
         self.setFrameShape(self.VLine|self.Sunken)
@@ -615,9 +621,9 @@ class pHNavigation(QDialog):
         elif platform.system() == "Windows":
             warning = QMessageBox.warning(self, 'Platform error!', 'I2C functionality is not compatible with Windows.')
             
-        if flag == False:
+        if flag == False: #If failed in the above condition -> not calibrating, close current window.
             phCalibrationStatus = False
-            self.close() #IN PROGRAM MEC, MAKE IT self.close()
+            self.close() 
             
         self.single = self.findChild(QPushButton,'single')
         self.two = self.findChild(QPushButton,'two')
@@ -1423,10 +1429,6 @@ class MainWindow(QMainWindow):
     update_PS_stat1Signal = pyqtSignal(str)
     update_PS_stat2Signal = pyqtSignal(str)
     
-    update_graph1aSignal = pyqtSignal()
-    update_graph1bSignal = pyqtSignal()
-    update_graph2Signal = pyqtSignal()
-    update_graph3Signal = pyqtSignal()
 
     def __init__(self, *args, **kwargs):
         global is_editing_setvals, is_editing_setvals2, ports, koradports, serial_ports, settingsSaved1, settingsSaved2, dAqON, ps_outputStatus1, ps_outputStatus2, data_points_int
@@ -1590,10 +1592,7 @@ class MainWindow(QMainWindow):
         self.update_statusBarSignal.connect(self.update_StatusBar)
         self.update_PS_stat1Signal.connect(self.update_stat1)
         self.update_PS_stat2Signal.connect(self.update_stat2)
-        self.update_graph1aSignal.connect(self.update_graph1a)
-        self.update_graph1bSignal.connect(self.update_graph1b)
-        self.update_graph2Signal.connect(self.update_graph2)
-        self.update_graph3Signal.connect(self.update_graph3)
+
 
         
     @QtCore.pyqtSlot(str)
@@ -1662,110 +1661,6 @@ class MainWindow(QMainWindow):
         else:
             self.statusPS2.setStyleSheet("background-color: red")
         self.statusPS2.setText(text)
-        
-    @QtCore.pyqtSlot()
-    def update_graph1a(self):
-        global graph1a_V1_Up, graph1a_V1_Down, graph1a_V2_Up, graph1a_V2_Down
-        
-        line1 = pd.Series(self.y1plot, self.xplot)
-        line3 = pd.Series(self.y3plot, self.xplot)
-       
-        self.graph1a.axes.cla()
-        self.axes1a.cla()
-        self.graph1a.axes.set_title("Voltage", fontweight = 'bold')
-        self.graph1a.axes.set_xlabel("Time recorded", fontweight = 'bold')
-        self.graph1a.axes.set_ylabel('Voltage 1 (V)',color = 'tab:red', fontweight = 'bold')
-        if not(graph1a_V1_Up == 0 and graph1a_V1_Down == 0):
-            self.graph1a.axes.set_ylim(graph1a_V1_Down, graph1a_V1_Up)
-        self.graph1a.axes.plot(*splitSerToArr(line1.dropna()), 'r', label = "Voltage 1", linestyle ='dashed', marker ="o")
-        self.graph1a.axes.tick_params(axis='y', labelcolor='tab:red')
-        
-        self.axes1a.set_ylabel('Voltage 2 (V)', color = 'tab:blue', fontweight = 'bold')
-        if not(graph1a_V2_Up == 0 and graph1a_V2_Down == 0):
-            self.axes1a.set_ylim(graph1a_V2_Down, graph1a_V2_Up)
-        self.axes1a.plot(*splitSerToArr(line3.dropna()),'b',label = "Voltage 2", linestyle ='dashed', marker = "v")
-        self.axes1a.tick_params(axis='y', labelcolor = 'tab:blue')
-        plt.setp(self.graph1a.axes.get_xticklabels(), rotation = 30, horizontalalignment = 'right')
-        self.graph1a.fig.legend(loc = 'upper right', bbox_to_anchor =(1.2,1.2), fancybox = True, shadow = True, ncol = 1, bbox_transform = self.graph1a.axes.transAxes)
-        
-        self.graph1a.draw()
-        self.graph1a.flush_events()
-        
-    @QtCore.pyqtSlot()
-    def update_graph1b(self):
-        global graph1b_C1_Up, graph1b_C1_Down, graph1b_C2_Up, graph1b_C2_Down
-        
-        line2 = pd.Series(self.y2plot, self.xplot2)
-        line4 = pd.Series(self.y4plot, self.xplot2)
-        
-        self.graph1b.axes.cla()
-        self.axes1b.cla()
-        self.graph1b.axes.set_title("Current", fontweight = 'bold')
-        self.graph1b.axes.set_xlabel("Time recorded", fontweight = 'bold')
-        self.graph1b.axes.set_ylabel('Current 1 (mA)',color = 'tab:red', fontweight = 'bold')
-        if not(graph1b_C1_Up == 0 and graph1b_C1_Down == 0):
-            self.graph1b.axes.set_ylim(graph1b_C1_Down, graph1b_C1_Up)
-        self.graph1b.axes.plot(*splitSerToArr(line2.dropna()), 'r', label = "Current 1", linestyle ='dashed', marker ="o")
-        self.graph1b.axes.tick_params(axis='y', labelcolor='tab:red')
-        
-        self.axes1b.set_ylabel('Current 2 (mA)', color = 'tab:blue', fontweight = 'bold')
-        if not(graph1b_C2_Up == 0 and graph1b_C2_Down == 0):
-            self.axes1b.set_ylim(graph1b_C2_Down, graph1b_C2_Up)
-        self.axes1b.plot(*splitSerToArr(line4.dropna()),'b',label = "Current 2", linestyle ='dashed', marker = "v")
-        self.axes1b.tick_params(axis='y', labelcolor = 'tab:blue')
-        plt.setp(self.graph1b.axes.get_xticklabels(), rotation = 30, horizontalalignment = 'right')
-        self.graph1b.fig.legend(loc = 'upper right', bbox_to_anchor =(1.2,1.2), fancybox = True, shadow = True, ncol = 1, bbox_transform = self.graph1b.axes.transAxes)
-        
-        self.graph1b.draw()
-        self.graph1b.flush_events()
-        
-    @QtCore.pyqtSlot()
-    def update_graph2(self):
-        global graph2_T1_Up, graph2_T1_Down, graph2_T2_Up, graph2_T2_Down
-        
-        temp1Line = pd.Series(self.temp1Plot, self.temp1x)
-        temp2Line = pd.Series(self.temp2Plot, self.temp2x)
-        
-        self.graph2.axes.cla()
-        self.axes2.cla()
-        self.graph2.axes.set_title("Temp$_\mathbf{internal}$ and Temp$_\mathbf{external}$", fontweight = 'bold')
-        self.graph2.axes.set_xlabel("Time recorded", fontweight = 'bold')
-        self.graph2.axes.set_ylabel('Temp$_\mathbf{internal}$ ($\circ$C)', color = 'tab:olive', fontweight = 'bold')
-        if not(graph2_T1_Up == 0 and graph2_T1_Down == 0):
-            self.graph2.axes.set_ylim(graph2_T1_Down, graph2_T1_Up)
-        self.graph2.axes.plot(*splitSerToArr(temp1Line.dropna()), 'y', label = 'Temp$_{int}$', linestyle ='dashed', marker ="o")
-        self.graph2.axes.tick_params(axis='y', labelcolor='tab:olive')
-        
-        self.axes2.set_ylabel('Temp$_\mathbf{external}$ ($\circ$C)', color = 'tab:green', fontweight = 'bold')
-        if not(graph2_T2_Up == 0 and graph2_T2_Down == 0):
-            self.axes2.set_ylim(graph2_T2_Down, graph2_T2_Up)
-        self.axes2.plot(*splitSerToArr(temp2Line.dropna()),'g', label = 'Temp$_{ext}$', linestyle ='dashed', marker = "v")
-        self.axes2.tick_params(axis='y', labelcolor = 'tab:green')
-        plt.setp(self.graph2.axes.get_xticklabels(), rotation = 30, horizontalalignment = 'right')
-        self.graph2.fig.legend(loc = 'upper right', bbox_to_anchor =(1.3,1.2), fancybox = True, shadow = True, ncol = 1, bbox_transform = self.graph2.axes.transAxes)
-        
-        self.graph2.draw()
-        self.graph2.flush_events()
-        
-    @QtCore.pyqtSlot()
-    def update_graph3(self):
-        global graph3_pH_Up, graph3_pH_Down
-        
-        pHLine = pd.Series(self.pHPlot, self.pHx)
-        
-        self.graph3.axes.cla()
-        self.graph3.axes.set_title("pH", fontweight = 'bold')
-        self.graph3.axes.set_xlabel("Time recorded", fontweight = 'bold')
-        self.graph3.axes.set_ylabel('pH', color = 'tab:purple', fontweight = 'bold')
-        if not(graph3_pH_Up == 0 and graph3_pH_Down == 0):
-            self.graph3.axes.set_ylim(graph3_pH_Down, graph3_pH_Up)
-        self.graph3.axes.plot(*splitSerToArr(pHLine.dropna()), 'm', label = 'pH', linestyle ='dashed', marker ="o")
-        self.graph3.axes.tick_params(axis='y', labelcolor='tab:purple')
-        plt.setp(self.graph3.axes.get_xticklabels(), rotation = 30, horizontalalignment = 'right')
-        self.graph3.axes.legend()
-        
-        self.graph3.draw()
-        self.graph3.flush_events()
         
     def pHControl1Clicked(self):
         pHControl_dlg = PHControlDialog()
@@ -1891,7 +1786,7 @@ class MainWindow(QMainWindow):
             try:
                 Tink.relaySTATE(0,1)
                 self.pHControl1.setEnabled(True)
-            except AssertionError:
+            except Exception:
                 tinkerFlag = False
                 self.pHControl1.setEnabled(False)
                 
@@ -2055,7 +1950,7 @@ class MainWindow(QMainWindow):
                             current = (str(PS1.channels[0].output_current * 1000)) # * 1000 for A to mA
                             voltage = (str(PS1.channels[0].output_voltage))
                             if current == str(None) or voltage == str(None):
-                                raise Exception
+                                pass
                             else:
                                 self.currentDisplay.setText(current) # * 1000 for A to mA
                                 self.voltageDisplay.setText(voltage)
@@ -2076,7 +1971,7 @@ class MainWindow(QMainWindow):
                             current2 = (str(PS2.channels[0].output_current * 1000)) # * 1000 for A to mA
                             voltage2 = (str(PS2.channels[0].output_voltage))
                             if current2 == str(None) or voltage2 == str(None):
-                                raise Exception
+                                pass
                             else:
                                 self.currentDisplay2.setText(current2) # * 1000 for A to mA
                                 self.voltageDisplay2.setText(voltage2)
@@ -2613,7 +2508,7 @@ class MainWindow(QMainWindow):
                 temp2 = "No probe connected"
         
         #TEMPERATURE COMPENSATION
-        if temp1 == "Not configured" or temp1 == "No probe connected":
+        if temp1 == "Not configured" or temp1 == "No probe connected" or temp1 == "--":
             adjust = 23
         else:
             adjust = round(float(temp1),2)
@@ -2667,7 +2562,7 @@ class MainWindow(QMainWindow):
         try:
             Tink.relaySTATE(0,1)
             self.pHControl1.setEnabled(True)
-        except AssertionError:
+        except Exception:
             tinkerFlag = False
             self.pHControl1.setEnabled(False)
                                    
@@ -2792,7 +2687,10 @@ class MainWindow(QMainWindow):
 
     def update_plot(self):
         global data_points_int, y1_label, y2_label, dev1, dev2, data_points_int
-        
+        global graph1a_V1_Up, graph1a_V1_Down, graph1a_V2_Up, graph1a_V2_Down
+        global graph1b_C1_Up, graph1b_C1_Down, graph1b_C2_Up, graph1b_C2_Down
+        global graph2_T1_Up, graph2_T1_Down, graph2_T2_Up, graph2_T2_Down
+        global graph3_pH_Up, graph3_pH_Down
         tchart = datetime.datetime.now()
         
         self.xplot.append(tchart)
@@ -2810,12 +2708,98 @@ class MainWindow(QMainWindow):
         self.pHx.append(tchart)
         self.pHx = self.pHx[-data_points_int:]
         
-        self.update_graph1aSignal.emit()
-        self.update_graph1bSignal.emit()
-        self.update_graph2Signal.emit()
-        self.update_graph3Signal.emit()
+        
+        line1 = pd.Series(self.y1plot, self.xplot)
+        line3 = pd.Series(self.y3plot, self.xplot)
+       
+        self.graph1a.axes.cla()
+        self.axes1a.cla()
+        self.graph1a.axes.set_title("Voltage", fontweight = 'bold')
+        self.graph1a.axes.set_xlabel("Time recorded", fontweight = 'bold')
+        self.graph1a.axes.set_ylabel('Voltage 1 (V)',color = 'tab:red', fontweight = 'bold')
+        if not(graph1a_V1_Up == 0 and graph1a_V1_Down == 0):
+            self.graph1a.axes.set_ylim(graph1a_V1_Down, graph1a_V1_Up)
+        self.graph1a.axes.plot(*splitSerToArr(line1.dropna()), 'r', label = "Voltage 1", linestyle ='dashed', marker ="o")
+        self.graph1a.axes.tick_params(axis='y', labelcolor='tab:red')
+        
+        self.axes1a.set_ylabel('Voltage 2 (V)', color = 'tab:blue', fontweight = 'bold')
+        if not(graph1a_V2_Up == 0 and graph1a_V2_Down == 0):
+            self.axes1a.set_ylim(graph1a_V2_Down, graph1a_V2_Up)
+        self.axes1a.plot(*splitSerToArr(line3.dropna()),'b',label = "Voltage 2", linestyle ='dashed', marker = "v")
+        self.axes1a.tick_params(axis='y', labelcolor = 'tab:blue')
+        plt.setp(self.graph1a.axes.get_xticklabels(), rotation = 30, horizontalalignment = 'right')
+        self.graph1a.fig.legend(loc = 'upper right', bbox_to_anchor =(1.2,1.2), fancybox = True, shadow = True, ncol = 1, bbox_transform = self.graph1a.axes.transAxes)
+        
+        self.graph1a.draw_idle()
+
+        
+        line2 = pd.Series(self.y2plot, self.xplot2)
+        line4 = pd.Series(self.y4plot, self.xplot2)
+        
+        self.graph1b.axes.cla()
+        self.axes1b.cla()
+        self.graph1b.axes.set_title("Current", fontweight = 'bold')
+        self.graph1b.axes.set_xlabel("Time recorded", fontweight = 'bold')
+        self.graph1b.axes.set_ylabel('Current 1 (mA)',color = 'tab:red', fontweight = 'bold')
+        if not(graph1b_C1_Up == 0 and graph1b_C1_Down == 0):
+            self.graph1b.axes.set_ylim(graph1b_C1_Down, graph1b_C1_Up)
+        self.graph1b.axes.plot(*splitSerToArr(line2.dropna()), 'r', label = "Current 1", linestyle ='dashed', marker ="o")
+        self.graph1b.axes.tick_params(axis='y', labelcolor='tab:red')
+        
+        self.axes1b.set_ylabel('Current 2 (mA)', color = 'tab:blue', fontweight = 'bold')
+        if not(graph1b_C2_Up == 0 and graph1b_C2_Down == 0):
+            self.axes1b.set_ylim(graph1b_C2_Down, graph1b_C2_Up)
+        self.axes1b.plot(*splitSerToArr(line4.dropna()),'b',label = "Current 2", linestyle ='dashed', marker = "v")
+        self.axes1b.tick_params(axis='y', labelcolor = 'tab:blue')
+        plt.setp(self.graph1b.axes.get_xticklabels(), rotation = 30, horizontalalignment = 'right')
+        self.graph1b.fig.legend(loc = 'upper right', bbox_to_anchor =(1.2,1.2), fancybox = True, shadow = True, ncol = 1, bbox_transform = self.graph1b.axes.transAxes)
+        
+        self.graph1b.draw_idle()
+
         
         
+        temp1Line = pd.Series(self.temp1Plot, self.temp1x)
+        temp2Line = pd.Series(self.temp2Plot, self.temp2x)
+        
+        self.graph2.axes.cla()
+        self.axes2.cla()
+        self.graph2.axes.set_title("Temp$_\mathbf{internal}$ and Temp$_\mathbf{external}$", fontweight = 'bold')
+        self.graph2.axes.set_xlabel("Time recorded", fontweight = 'bold')
+        self.graph2.axes.set_ylabel('Temp$_\mathbf{internal}$ ($\circ$C)', color = 'tab:olive', fontweight = 'bold')
+        if not(graph2_T1_Up == 0 and graph2_T1_Down == 0):
+            self.graph2.axes.set_ylim(graph2_T1_Down, graph2_T1_Up)
+        self.graph2.axes.plot(*splitSerToArr(temp1Line.dropna()), 'y', label = 'Temp$_{int}$', linestyle ='dashed', marker ="o")
+        self.graph2.axes.tick_params(axis='y', labelcolor='tab:olive')
+        
+        self.axes2.set_ylabel('Temp$_\mathbf{external}$ ($\circ$C)', color = 'tab:green', fontweight = 'bold')
+        if not(graph2_T2_Up == 0 and graph2_T2_Down == 0):
+            self.axes2.set_ylim(graph2_T2_Down, graph2_T2_Up)
+        self.axes2.plot(*splitSerToArr(temp2Line.dropna()),'g', label = 'Temp$_{ext}$', linestyle ='dashed', marker = "v")
+        self.axes2.tick_params(axis='y', labelcolor = 'tab:green')
+        plt.setp(self.graph2.axes.get_xticklabels(), rotation = 30, horizontalalignment = 'right')
+        self.graph2.fig.legend(loc = 'upper right', bbox_to_anchor =(1.2,1.2), fancybox = True, shadow = True, ncol = 1, bbox_transform = self.graph2.axes.transAxes)
+        
+        self.graph2.draw_idle()
+        #self.graph2.flush_events()
+        
+        
+        pHLine = pd.Series(self.pHPlot, self.pHx)
+        
+        self.graph3.axes.cla()
+        self.graph3.axes.set_title("pH", fontweight = 'bold')
+        self.graph3.axes.set_xlabel("Time recorded", fontweight = 'bold')
+        self.graph3.axes.set_ylabel('pH', color = 'tab:purple', fontweight = 'bold')
+        if not(graph3_pH_Up == 0 and graph3_pH_Down == 0):
+            self.graph3.axes.set_ylim(graph3_pH_Down, graph3_pH_Up)
+        self.graph3.axes.plot(*splitSerToArr(pHLine.dropna()), 'm', label = 'pH', linestyle ='dashed', marker ="o")
+        self.graph3.axes.tick_params(axis='y', labelcolor='tab:purple')
+        plt.setp(self.graph3.axes.get_xticklabels(), rotation = 30, horizontalalignment = 'right')
+        self.graph3.axes.legend()
+        
+        self.graph3.draw_idle()
+
+        
+
     def check_onlineDisplay(self):
         if self.onlineDisplay.text() == 'POLLING AND DATA LOGGING STOPPED':
             self.onlineDisplay.setStyleSheet("background-color: red")
