@@ -19,7 +19,7 @@ import sys, glob, serial, os
 import serial.tools.list_ports
 
 import PyQt5
-from PyQt5 import QtWidgets, QtCore, QtGui, uic
+from PyQt5 import QtWidgets, QtCore, QtGui, uic, sip
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
@@ -1791,6 +1791,8 @@ class MainWindow(QMainWindow):
         while True:
             if platform.system() == 'Linux':
                 device_list = get_devices() #Finds I2C devices
+            else:
+                self.pHCalibration1.setEnabled(False)
             """
             Checking for KoradSerial Compatible ports below based on list of serial ports
             If found -> set to dev1 or dev2 respectively
@@ -1997,9 +1999,14 @@ class MainWindow(QMainWindow):
                     else:
                         self.currentDisplay2.setText('Output off')
                         self.voltageDisplay2.setText('Output off')
-                
-                #Polling I2C data function
-                self.pollingStart()
+
+                if platform.system() == 'Linux':
+                    #Polling I2C data function
+                    self.pollingStart()
+                else:
+                    self.update_Temp1Signal.emit("Not configured")
+                    self.update_Temp2Signal.emit("Not configured")
+                    self.update_pHSignal.emit("Not configured")
                 
                 #Updating plot vars -> If displays are values -> append to plot, else append None
                 if not (self.currentDisplay.text() == "Not connected" or self.currentDisplay.text() == "--" or self.currentDisplay.text() == "Output off"):
