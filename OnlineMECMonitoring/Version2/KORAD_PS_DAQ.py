@@ -29,8 +29,6 @@ import time, datetime
 from koradserial import KoradSerial
 from configparser import ConfigParser
 
-import piplates.TINKERplate as Tink
-
 import numpy as np
 import pandas as pd
 import io
@@ -41,6 +39,7 @@ import platform
 
 if platform.system() == 'Linux':
     import fcntl
+    import piplates.TINKERplate as Tink
     from AtlasI2C import (
          AtlasI2C
     )
@@ -64,6 +63,12 @@ from threading import Thread
 global dLogInterval, dAqInterval, dAqON, runPS, fileName, koradports, ports, polling, device_list
 
 current = pathlib.Path().absolute()
+
+"""
+stdout_fileno = sys.stderr
+
+sys.stderr = open("Runtime errors.txt", 'w+')
+"""
 
 #------------------------------------------------------------------------------#
 # FUNCTIONS
@@ -763,30 +768,37 @@ class CalibrationDialog(QDialog):
         tCalibThread.start()
                     
     def calibThread1(self):
-        global calibcont, calibFailed, calibExit, phCalibrationStatus, calibWaiting 
+        global calibcont, calibFailed, calibExit, phCalibrationStatus, calibWaiting
+        #Calibration flags used to maintain operation
         calibExit = True
         calibFailed = False
         calibWaiting = False
         
+        #If user selection for calibration points >=1 (single point test or higher and calib not failed)
         if self.points >= 1 and calibFailed == False:
+            #Set flag to false and show midpoint test dialog
             calibcont = False
             self.pHContinueMid.show()
             while calibcont == False:
                 time.sleep(1)
-                
+            #Depending on user selection either begin testing or exit calibration 
             if calibExit == False:
+                #Set stabalized flag to false, textbox to empty and update status message
                 self.stabilized = False
                 self.textEdit = ''
                 self.update_statusSignal.emit("pH Sensor Readings - Reaching steady state (Midpoint calibration)")
-
+                
+                #Begin recursively finding steady state pH
                 prev = float(self.i2c_readwrite(self.address, "R"))
                 self.textEdit += 'pH = '+ str(prev) + '\n'
                 self.update_TextSignal.emit(self.textEdit)
+                #Loop continuously until steady state has been reached.
                 while self.stabilized == False:
                     time.sleep(0.2)
                     val = self.steadyStateTest(prev, 0)
                     self.stabilized = True
                 
+                #If above loop was interupted don't enter this and pass below functions until end
                 if calibFailed == False and calibExit == False:
                     self.i2c_readwrite(self.address,"cal,mid,7")
                     self.update_statusSignal.emit("pH Sensor Readings - Steady state attained and new midpoint calibrated")
@@ -1486,11 +1498,14 @@ class MainWindow(QMainWindow):
         self.pHControl1.clicked.connect(self.pHControl1Clicked)
         
         #FIND TINK AND TURN OFF OPEN CONTACTS JUST IN CASE
-        try:
-            Tink.relayOFF(0,1)
-            time.sleep(0.1)
-            Tink.relayOFF(0,2)
-        except Exception:
+        if platform.system() == 'Linux':
+            try:
+                Tink.relayOFF(0,1)
+                time.sleep(0.1)
+                Tink.relayOFF(0,2)
+            except Exception:
+                self.pHControl1.setEnabled(False)
+        else:
             self.pHControl1.setEnabled(False)
         
         self.ps1StatusLabel = QLabel("Power source 1 -")
@@ -1753,7 +1768,6 @@ class MainWindow(QMainWindow):
             if not set(serial_ports_temp) == set(serial_ports):
                 serialportsChanged = True
                 serial_ports = serial_ports_temp
-                
             time.sleep(1)
             
     def runMainThread(self):    
@@ -1783,11 +1797,13 @@ class MainWindow(QMainWindow):
             Then append dev1 and/or dev2 to korad ports
             Write new information to INI file
             """
-            try:
-                Tink.relaySTATE(0,1)
-                self.pHControl1.setEnabled(True)
-            except Exception:
-                tinkerFlag = False
+            if platform.system() == 'Linux' and not(self.pHDisplay.text() == "Not configured" or self.pHDisplay.text() == "No probe connected" or self.pHDisplay.text() == "--"):
+                try:
+                    Tink.relaySTATE(0,1)
+                    self.pHControl1.setEnabled(True)
+                except Exception:
+                    self.pHControl1.setEnabled(False)
+            else:
                 self.pHControl1.setEnabled(False)
                 
             koradports = []
@@ -1816,7 +1832,6 @@ class MainWindow(QMainWindow):
                         except Exception:
                             dev2 = ''
                             
-                
             if not dev1 == '':
                 koradports.append(dev1)
             if not dev2 == '':
@@ -1928,7 +1943,7 @@ class MainWindow(QMainWindow):
             """
             if startAcquisition == True:
                 self.startButton.setEnabled(False)
-                
+                self.plotsetButton.setEnabled(False)
                 """
                 If flag 1 is false -> setText to not connected
                 else:
@@ -2008,9 +2023,11 @@ class MainWindow(QMainWindow):
                 #Update plot function
                 self.update_plot()
                 
-                #Set flag to false and enabled startButton
+                #Set flag to false and enable startButton and plot settings button
                 startAcquisition = False
                 self.startButton.setEnabled(True)
+                self.plotsetButton.setEnabled(True)
+
 
             #If startLogs flag is triggered -> Begin writing telem data (flag is then set to false)
             if startLogs == True:
@@ -2341,20 +2358,22 @@ class MainWindow(QMainWindow):
 
     def check_plot_vars(self):
         global y1_label, y2_label, data_points_int
-
-        if not (self.tempDisplay1.text() == "No probe connected" or self.tempDisplay1.text() == "Not configured"):
+        
+        #If no data is being displayed, append None to plotting array, else append value as float
+        if not (self.tempDisplay1.text() == "No probe connected" or self.tempDisplay1.text() == "Not configured" or self.tempDisplay1.text() == "--"):
             self.temp1Plot.append(round(float(self.tempDisplay1.text()), 3))
         else:
             self.temp1Plot.append(None)
-        if not (self.tempDisplay2.text() == "No probe connected" or self.tempDisplay2.text() == "Not configured"):
+        if not (self.tempDisplay2.text() == "No probe connected" or self.tempDisplay2.text() == "Not configured" or self.tempDisplay2.text() == "--"):
             self.temp2Plot.append(round(float(self.tempDisplay2.text()), 3))
         else:
             self.temp2Plot.append(None)
-        if not (self.pHDisplay.text() == "No probe connected" or self.pHDisplay.text() == "Not configured"):
+        if not (self.pHDisplay.text() == "No probe connected" or self.pHDisplay.text() == "Not configured" or self.pHDisplay.text() == "--"):
             self.pHPlot.append(round(float(self.pHDisplay.text()), 1))
         else:
             self.pHPlot.append(None)
         
+        #Set list to last data_points_int elements in the list
         self.y1plot = self.y1plot[-data_points_int:]
         self.y2plot = self.y2plot[-data_points_int:]
         
@@ -2540,10 +2559,10 @@ class MainWindow(QMainWindow):
             self.pHControl1.setEnabled(False)
         
         #START CONTROL HERE if ENABLED
-        if pHControlStatus and not(pH == "Not configured" or pH == "No probe") and self.pHControl1.isEnabled():
+        if pHControlStatus and not(pH == "Not configured" or pH == "No probe connected") and self.pHControl1.isEnabled():
             tpHControl = threading.Thread(target= self.phControlFunction, args=(pH))
             tpHControl.daemon = True
-            tpHControlstart()
+            tpHControl.start()
         
         self.update_Temp1Signal.emit(temp1)
         self.update_Temp2Signal.emit(temp2)
@@ -2568,7 +2587,6 @@ class MainWindow(QMainWindow):
                                    
         time.sleep(0.1)                           
         if tinkerFlag:
-            
             if pH < pHSetupPoint:
                 Tink.relayON(0,2)
                 time.sleep(0.1)
@@ -2686,119 +2704,129 @@ class MainWindow(QMainWindow):
 
 
     def update_plot(self):
-        global data_points_int, y1_label, y2_label, dev1, dev2, data_points_int
+        global data_points_int, dev1, dev2, data_points_int
         global graph1a_V1_Up, graph1a_V1_Down, graph1a_V2_Up, graph1a_V2_Down
         global graph1b_C1_Up, graph1b_C1_Down, graph1b_C2_Up, graph1b_C2_Down
         global graph2_T1_Up, graph2_T1_Down, graph2_T2_Up, graph2_T2_Down
         global graph3_pH_Up, graph3_pH_Down
-        tchart = datetime.datetime.now()
         
+        tchart = datetime.datetime.now() #Current date time value
+        
+        #Append current date time to list and set list to the last data_points_int elements in list
         self.xplot.append(tchart)
         self.xplot = self.xplot[-data_points_int:]
-            
         self.xplot2.append(tchart)
         self.xplot2 = self.xplot2[-data_points_int:]
-        
         self.temp1x.append(tchart)
         self.temp1x = self.temp1x[-data_points_int:]
-        
         self.temp2x.append(tchart)
         self.temp2x = self.temp2x[-data_points_int:]
-            
         self.pHx.append(tchart)
         self.pHx = self.pHx[-data_points_int:]
         
-        
-        line1 = pd.Series(self.y1plot, self.xplot)
-        line3 = pd.Series(self.y3plot, self.xplot)
+        #pandas series for later usage, used to mask "None" entries in the plotting process
+        #Each line represents a data set
+        line1 = pd.Series(self.y1plot, self.xplot) #Voltage of PS 1
+        line3 = pd.Series(self.y3plot, self.xplot) #Voltage of PS 2 
        
+        line2 = pd.Series(self.y2plot, self.xplot2) #Current of PS 1
+        line4 = pd.Series(self.y4plot, self.xplot2) #Current of PS 2
+        
+        temp1Line = pd.Series(self.temp1Plot, self.temp1x) # Temp 1
+        temp2Line = pd.Series(self.temp2Plot, self.temp2x) # Temp 2
+        pHLine = pd.Series(self.pHPlot, self.pHx) # pH
+        
+        #Clear both axes
         self.graph1a.axes.cla()
         self.axes1a.cla()
+        #Set title and axes labels
         self.graph1a.axes.set_title("Voltage", fontweight = 'bold')
         self.graph1a.axes.set_xlabel("Time recorded", fontweight = 'bold')
         self.graph1a.axes.set_ylabel('Voltage 1 (V)',color = 'tab:red', fontweight = 'bold')
+        #Set limits of left y-axis if needed
         if not(graph1a_V1_Up == 0 and graph1a_V1_Down == 0):
             self.graph1a.axes.set_ylim(graph1a_V1_Down, graph1a_V1_Up)
+        #Plot line 1 data and adjust y-tick appearance
         self.graph1a.axes.plot(*splitSerToArr(line1.dropna()), 'r', label = "Voltage 1", linestyle ='dashed', marker ="o")
         self.graph1a.axes.tick_params(axis='y', labelcolor='tab:red')
-        
+        #Set axes label and limits of right y-axis if needed
         self.axes1a.set_ylabel('Voltage 2 (V)', color = 'tab:blue', fontweight = 'bold')
         if not(graph1a_V2_Up == 0 and graph1a_V2_Down == 0):
             self.axes1a.set_ylim(graph1a_V2_Down, graph1a_V2_Up)
+        #Plot line 3 data and adjust y-tick appearance
         self.axes1a.plot(*splitSerToArr(line3.dropna()),'b',label = "Voltage 2", linestyle ='dashed', marker = "v")
         self.axes1a.tick_params(axis='y', labelcolor = 'tab:blue')
+        #Format x-axis for dates, redraws figure legend, and redraws entire graph
         plt.setp(self.graph1a.axes.get_xticklabels(), rotation = 30, horizontalalignment = 'right')
         self.graph1a.fig.legend(loc = 'upper right', bbox_to_anchor =(1.2,1.2), fancybox = True, shadow = True, ncol = 1, bbox_transform = self.graph1a.axes.transAxes)
-        
         self.graph1a.draw_idle()
 
-        
-        line2 = pd.Series(self.y2plot, self.xplot2)
-        line4 = pd.Series(self.y4plot, self.xplot2)
-        
+        #Clear both axes
         self.graph1b.axes.cla()
         self.axes1b.cla()
+        #Set title and axes labels
         self.graph1b.axes.set_title("Current", fontweight = 'bold')
         self.graph1b.axes.set_xlabel("Time recorded", fontweight = 'bold')
         self.graph1b.axes.set_ylabel('Current 1 (mA)',color = 'tab:red', fontweight = 'bold')
+        #Set limits of left y-axis if needed
         if not(graph1b_C1_Up == 0 and graph1b_C1_Down == 0):
             self.graph1b.axes.set_ylim(graph1b_C1_Down, graph1b_C1_Up)
+        #Plot line 2 data and adjust y-tick appearance
         self.graph1b.axes.plot(*splitSerToArr(line2.dropna()), 'r', label = "Current 1", linestyle ='dashed', marker ="o")
         self.graph1b.axes.tick_params(axis='y', labelcolor='tab:red')
-        
+        #Set axes label and limits of right y-axis if needed
         self.axes1b.set_ylabel('Current 2 (mA)', color = 'tab:blue', fontweight = 'bold')
         if not(graph1b_C2_Up == 0 and graph1b_C2_Down == 0):
             self.axes1b.set_ylim(graph1b_C2_Down, graph1b_C2_Up)
+        #Plot line 4 data and adjust y-tick appearance
         self.axes1b.plot(*splitSerToArr(line4.dropna()),'b',label = "Current 2", linestyle ='dashed', marker = "v")
         self.axes1b.tick_params(axis='y', labelcolor = 'tab:blue')
+        #Format x-axis for dates, redraws figure legend, and redraws entire graph
         plt.setp(self.graph1b.axes.get_xticklabels(), rotation = 30, horizontalalignment = 'right')
         self.graph1b.fig.legend(loc = 'upper right', bbox_to_anchor =(1.2,1.2), fancybox = True, shadow = True, ncol = 1, bbox_transform = self.graph1b.axes.transAxes)
-        
         self.graph1b.draw_idle()
 
-        
-        
-        temp1Line = pd.Series(self.temp1Plot, self.temp1x)
-        temp2Line = pd.Series(self.temp2Plot, self.temp2x)
-        
+        #Clear both axes
         self.graph2.axes.cla()
         self.axes2.cla()
+        #Set title and axes labels
         self.graph2.axes.set_title("Temp$_\mathbf{internal}$ and Temp$_\mathbf{external}$", fontweight = 'bold')
         self.graph2.axes.set_xlabel("Time recorded", fontweight = 'bold')
         self.graph2.axes.set_ylabel('Temp$_\mathbf{internal}$ ($\circ$C)', color = 'tab:olive', fontweight = 'bold')
+        #Set limits of left y-axis if needed
         if not(graph2_T1_Up == 0 and graph2_T1_Down == 0):
             self.graph2.axes.set_ylim(graph2_T1_Down, graph2_T1_Up)
+        #Plot temp 1 line data and adjust y-tick appearance
         self.graph2.axes.plot(*splitSerToArr(temp1Line.dropna()), 'y', label = 'Temp$_{int}$', linestyle ='dashed', marker ="o")
         self.graph2.axes.tick_params(axis='y', labelcolor='tab:olive')
-        
+        #Set axes label and limits of right y-axis if needed
         self.axes2.set_ylabel('Temp$_\mathbf{external}$ ($\circ$C)', color = 'tab:green', fontweight = 'bold')
         if not(graph2_T2_Up == 0 and graph2_T2_Down == 0):
             self.axes2.set_ylim(graph2_T2_Down, graph2_T2_Up)
+        #Plot temp 2 line data and adjust y-tick appearance
         self.axes2.plot(*splitSerToArr(temp2Line.dropna()),'g', label = 'Temp$_{ext}$', linestyle ='dashed', marker = "v")
         self.axes2.tick_params(axis='y', labelcolor = 'tab:green')
+        #Format x-axis for dates, redraws figure legend, and redraws entire graph
         plt.setp(self.graph2.axes.get_xticklabels(), rotation = 30, horizontalalignment = 'right')
         self.graph2.fig.legend(loc = 'upper right', bbox_to_anchor =(1.2,1.2), fancybox = True, shadow = True, ncol = 1, bbox_transform = self.graph2.axes.transAxes)
-        
         self.graph2.draw_idle()
-        #self.graph2.flush_events()
         
-        
-        pHLine = pd.Series(self.pHPlot, self.pHx)
-        
+        #Clear axes
         self.graph3.axes.cla()
+        #Set title and axes labels
         self.graph3.axes.set_title("pH", fontweight = 'bold')
         self.graph3.axes.set_xlabel("Time recorded", fontweight = 'bold')
         self.graph3.axes.set_ylabel('pH', color = 'tab:purple', fontweight = 'bold')
+        #Set limits of left y-axis if needed
         if not(graph3_pH_Up == 0 and graph3_pH_Down == 0):
             self.graph3.axes.set_ylim(graph3_pH_Down, graph3_pH_Up)
+        #Plot pH line data and adjust y-tick appearance
         self.graph3.axes.plot(*splitSerToArr(pHLine.dropna()), 'm', label = 'pH', linestyle ='dashed', marker ="o")
         self.graph3.axes.tick_params(axis='y', labelcolor='tab:purple')
+        #Format x-axis for dates, redraws figure legend, and redraws entire graph
         plt.setp(self.graph3.axes.get_xticklabels(), rotation = 30, horizontalalignment = 'right')
         self.graph3.axes.legend()
-        
         self.graph3.draw_idle()
-
-        
 
     def check_onlineDisplay(self):
         if self.onlineDisplay.text() == 'POLLING AND DATA LOGGING STOPPED':
@@ -2845,6 +2873,7 @@ class MainWindow(QMainWindow):
             
             while True:
                 if threadEnded == True:
+                    wait.close()
                     break
                 loop = QEventLoop()
                 QTimer.singleShot(1000, loop.quit)
@@ -2868,7 +2897,6 @@ if __name__ == "__main__":
 
     #main.show()
     sys.exit(app.exec())
-
     try:
         ps.output.off() # for safety reasons in development
         ps.close()
