@@ -46,6 +46,8 @@ Source: "C:\Users\midas\Documents\BiosensorApplication\*"; DestDir: "{app}"; Fla
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{autodesktop}\{#ChannelName1}"; Filename: "{app}\{#ChannelLoc1}"; Tasks: desktopicon
+Name: "{autodesktop}\{#ChannelName2}"; Filename: "{app}\{#ChannelLoc2}"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
