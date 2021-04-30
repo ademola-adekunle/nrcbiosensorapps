@@ -2,5 +2,5 @@
 
 # Public repository with all biosensor applications
 - EZO Pump
-- Online MCU Biosensor
+- Online Biosensor MCU
 - Online MEC Monitoring Program
