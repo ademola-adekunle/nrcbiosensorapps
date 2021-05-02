@@ -1,5 +1,6 @@
 # OnlineBiosensorMCU
-This program is currently tested on python 3.7 and python 3.8. It is also functional on the Raspberry Pi 3/4 and on Windows.
+Version 1 is currently tested on python 2.7. It is functional on the Raspberry Pi 3 and on Windows. 
+Version 2 is currently tested on python 3.7 and python 3.8. It is also functional on the Raspberry Pi 3/4 and on Windows.
 
 ## Version 0
 This folder contains the old biosensor data acquisition program. It features 4 separate working programs: two for Linux (TOX and BODCOD) and two for Windows (TOX and BODCOD)
