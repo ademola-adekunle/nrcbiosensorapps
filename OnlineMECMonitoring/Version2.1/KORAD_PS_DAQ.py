@@ -2307,7 +2307,7 @@ class MainWindow(QMainWindow):
         if (self.tempDisplay2.text()) == "No probe connected" or self.tempDisplay2.text() == "Not configured":
             temp2_text = '--'
         else:
-            temp2_text = self.tempDisplay1.text()
+            temp2_text = self.tempDisplay2.text()
             
         if (self.pHDisplay.text()) == "No probe connected" or self.pHDisplay.text() == "Not configured":
             pH_text = '--'
