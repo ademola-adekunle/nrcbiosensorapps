@@ -2093,7 +2093,6 @@ class MainPage(QWidget):
                                     break
                                 endcheck = time.time()
                                 if endcheck - startcheck >= 300:
-                                    self.close()
                                     if(platform.system() == 'Linux'):
                                         os.system('sudo shutdown -r now')
                                     else:
@@ -2198,7 +2197,7 @@ class MainPage(QWidget):
                 threadEnded[channel] = False
                 
                 #Initialize empty str variables
-                acquisitionLog = ''
+                acquisitionLog = '\n'
                 text = ''
 
                 #Set time interval between acquisition cycles and disable start/stop thread (button)
@@ -2248,27 +2247,87 @@ class MainPage(QWidget):
                             
                         elif ("Battery Voltage" in x) and ('mV' in x):
                             text = re.findall(r"[+-]? *(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?", x)
-                            outputs[channel][1] = text[0].strip()
-                        
+                            if not text == None:
+                                try:
+                                    num = float(text[0].strip())
+                                    if num <= 0:
+                                        outputs[channel][1] = 0
+                                    else:
+                                        outputs[channel][1] = num
+                                except Exception:
+                                    outputs[channel][1] = 0
+                            else:
+                                outputs[channel][1] = 0
+                                    
                         elif ("SS Vcc" in x) and ("mV" in x):
                             text = re.findall(r"[+-]? *(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?", x)
-                            outputs[channel][2] = text[0].strip()
+                            if not text == None:
+                                try:
+                                    num = float(text[0].strip())
+                                    if num <= 0:
+                                        outputs[channel][2] = 0
+                                    else:
+                                        outputs[channel][2] = num
+                                except Exception:
+                                    outputs[channel][2] = 0
+                            else:
+                                outputs[channel][2] = 0
                         
                         elif ("SS Voc" in x) and ("mV" in x):
                             text = re.findall(r"[+-]? *(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?", x)
-                            outputs[channel][3] = text[0].strip()
+                            if not text == None:
+                                try:
+                                    num = float(text[0].strip())
+                                    if num <= 0:
+                                        outputs[channel][3] = 0
+                                    else:
+                                        outputs[channel][3] = num
+                                except Exception:
+                                    outputs[channel][3] = 0
+                            else:
+                                outputs[channel][3] = 0
                         
                         elif ("Rr" in x) and ('ohms' in x):
                             text = re.findall(r"[+-]? *(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?", x)
-                            outputs[channel][5] = text[0].strip()
+                            if not text == None:
+                                try:
+                                    num = float(text[0].strip())
+                                    if num <= 0:
+                                        outputs[channel][5] = 0
+                                    else:
+                                        outputs[channel][5] = num
+                                except Exception:
+                                    outputs[channel][5] = 0
+                            else:
+                                outputs[channel][5] = 0
                             
                         elif ("Ra" in x) and ('ohms' in x):
                             text = re.findall(r"[+-]? *(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?", x)
-                            outputs[channel][6] = text[0].strip()
+                            if not text == None:
+                                try:
+                                    num = float(text[0].strip())
+                                    if num <= 0:
+                                        outputs[channel][6] = 0
+                                    else:
+                                        outputs[channel][6] = num
+                                except Exception:
+                                    outputs[channel][6] = 0
+                            else:
+                                outputs[channel][6] = 0
                         
                         elif ("Ca" in x) and ("uF" in x):
                             text = re.findall(r"[+-]? *(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?", x)
-                            outputs[channel][7] = text[0].strip()
+                            if not text == None:
+                                try:
+                                    num = float(text[0].strip())
+                                    if num <= 0:
+                                        outputs[channel][7] = 0
+                                    else:
+                                        outputs[channel][7] = num
+                                except Exception:
+                                    outputs[channel][7] = 0
+                            else:
+                                outputs[channel][7] = 0
                             
                     #IF all outputs have been appropriately set -> Continue        
                     for i in range(0 , 8):
@@ -2354,7 +2413,6 @@ class MainPage(QWidget):
                 start_plotting[channel] = True
                 
                 #Writing into file
-                acquisitionLog += '\n'
                 text = ''
                 text += acquisitionLog
                 writeIntoFile(channel, mode, True, text)
@@ -2406,7 +2464,7 @@ class MainPage(QWidget):
                         #Read a byte to check if disconnected
                         serial_objects[channel].read(1)
                         
-                        time.sleep(1)
+                        time.sleep(0.7)
                         
                 if(endFlag[channel]):
                     self.status.setText("Acquisition stopped")
