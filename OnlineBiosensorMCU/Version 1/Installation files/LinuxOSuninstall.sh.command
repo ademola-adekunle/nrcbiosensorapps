@@ -2,9 +2,8 @@
 
 #Removing Repository
 cd $HOME
-cd ../..
-cd usr/share
-sudo rm -r "Source files"
+cd /home/pi/.local/share
+sudo rm -r "OnlineBiosensorMCU"
 
 #Removing STM32
 sudo rm -r "stm32"

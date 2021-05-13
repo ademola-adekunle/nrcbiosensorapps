@@ -33,11 +33,12 @@ sudo apt-get install python3-numpy -y
 cd #HOME
 git clone https://github.com/ademola-adekunle/nrcbiosensorapps
 cd nrcbiosensorapps
-cd OnlineBiosensorMCU
-cd "Version 1"
-sudo cp -r "Source files" /usr/share
+sudo cp -r "OnlineBiosensorMCU" /home/pi/.local/share
 cd $HOME
 sudo rm -r nrcbiosensorapps
+
+sudo chmod +x "/home/pi/.local/share/OnlineBiosensorMCU/Version 1/Source files/runBiosensor.sh"
+sudo chmod -R 777 "/home/pi/.local/share/OnlineBiosensorMCU/Version 1/Source files"
 
 #Configuring St-Link
 cd $HOME
@@ -71,20 +72,19 @@ sudo cat /boot/config.txt
 enable_uart=1
 sudo cat /boot/config.txt
 
-sudo chmod +x "/usr/share/Source files/runBiosensor.sh"
 
 mkdir -p /home/pi/.config/autostart/
 echo '[Desktop Entry]'>/home/pi/.config/autostart/biosensor.desktop
 echo 'Type=Application'>>/home/pi/.config/autostart/biosensor.desktop
 echo 'Name=Biosensor'>>/home/pi/.config/autostart/biosensor.desktop
-echo 'Exec="/usr/share/Source files/runBiosensor.sh"'>>/home/pi/.config/autostart/biosensor.desktop
+echo 'Exec="/home/pi/.local/share/OnlineBiosensorMCU/Version 1/Source files/runBiosensor.sh"'>>/home/pi/.config/autostart/biosensor.desktop
 
 
 cd $HOME
 cd Desktop
 
-ln -s "/usr/share/Source files/Channel1" "Biosensor Channel1 Data"
-ln -s "/usr/share/Source files/Channel2" "Biosensor Channel2 Data"
+ln -s "/home/pi/.local/share/OnlineBiosensorMCU/Version 1/Source files/Channel1" "Biosensor Channel1 Data"
+ln -s "/home/pi/.local/share/OnlineBiosensorMCU/Version 1/Source files/Channel2" "Biosensor Channel2 Data"
 
 cd $HOME
 cd ..
@@ -97,8 +97,8 @@ echo 'Type = Application' | sudo tee -a /usr/share/applications/BiosensorApplica
 echo 'Encoding = UTF-8' | sudo tee -a /usr/share/applications/BiosensorApplication.desktop
 echo 'Name = Biosensor Data Acquisition ' | sudo tee -a /usr/share/applications/BiosensorApplication.desktop
 echo 'Comment = Biosensor Data Acquisition' | sudo tee -a /usr/share/applications/BiosensorApplication.desktop
-echo 'Exec = "/usr/share/Source files/runBiosensor.sh"' | sudo tee -a /usr/share/applications/BiosensorApplication.desktop
-echo 'Icon = "/usr/share/Source files/UI_Forms/NRCLogo.png"' | sudo tee -a /usr/share/applications/BiosensorApplication.desktop
+echo 'Exec = "/home/pi/.local/share/OnlineBiosensorMCU/Version 1/Source files/runBiosensor.sh"' | sudo tee -a /usr/share/applications/BiosensorApplication.desktop
+echo 'Icon = /home/pi/.local/share/OnlineBiosensorMCU/Version 1/Source files/UI_Forms/NRCLogo.ico' | sudo tee -a /usr/share/applications/BiosensorApplication.desktop
 echo 'Terminal = false' | sudo tee -a /usr/share/applications/BiosensorApplication.desktop
 
 sudo lxpanelctl restart
