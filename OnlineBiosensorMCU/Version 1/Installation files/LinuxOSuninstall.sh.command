@@ -5,6 +5,10 @@ cd $HOME
 cd /home/pi/.local/share
 sudo rm -r "OnlineBiosensorMCU"
 
+cd $HOME
+cd ../..
+cd usr/share
+
 #Removing STM32
 sudo rm -r "stm32"
 
