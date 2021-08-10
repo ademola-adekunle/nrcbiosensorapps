@@ -433,8 +433,15 @@ elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'): # if
     uis = current / "KORAD_PS_DAQ/UI_Files"
     inis = current / "KORAD_PS_DAQ/INI"
     datalogs = current / "KORAD_PS_DAQ/Data_Logs"
+    
+    if os.path.exists(resourcepath(str(current)+"/KORAD_PS_DAQ/INI/psSettings.ini")):
+        file_exist = True
+        file_size = os.path.getsize(resourcepath(str(current)+"/KORAD_PS_DAQ/INI/psSettings.ini"))
+    else:
+        file_exist = False
+        file_size = 0
 
-    if not os.path.exists(resourcepath(str(current)+"/KORAD_PS_DAQ/INI/psSettings.ini")):
+    if file_exist or file_size == 0:
         psVoltage = 1.4
         psCurrentMax = 2.0
         psVoltageMax = 20.0
@@ -472,11 +479,14 @@ elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'): # if
         graph3_pH_Down = 0
         INI_write() # makes INI file with these standard initial conditions
         
+        
+datalogs = ''
+try:
+    INI_read()
+except Exception:
+    INI_write()
+    INI_read()
     
-    
-datalogs = ''    
-INI_read()
-
 ports = serial.tools.list_ports.comports() 
 koradports = []
 koradserials = []
@@ -2361,7 +2371,12 @@ class MainWindow(QMainWindow):
         self.AdvSettings = AdvSettings()
         self.AdvSettings.show()
 
-        INI_read() # updates advset strings
+        try:
+            INI_read() #Updates Advanced settings
+        except Exception:
+            INI_write()
+            INI_read()
+    
 
         if ocp_advset == 'on':
             self.AdvSettings.ocpCheckBox.setChecked(True)
@@ -2414,7 +2429,12 @@ class MainWindow(QMainWindow):
         self.AdvSettings2 = AdvSettings2()
         self.AdvSettings2.show()
 
-        INI_read() # updates advset strings
+        try:
+            INI_read() #updates advanced settings 2 strings
+        except Exception:
+            INI_write()
+            INI_read()
+    
 
         if ocp_advset2 == 'on':
             self.AdvSettings2.ocpCheckBox.setChecked(True)
@@ -2562,7 +2582,11 @@ class MainWindow(QMainWindow):
                 self.startButton.setText('STOP')
                 self.onlineDisplay.setText('POLLING AND DATA LOGGING ONGOING')
                 self.startButton.setChecked(True)
-                INI_read() # applies specifications stored in INI file
+                try:
+                    INI_read() # applies specifications stored in INI file
+                except Exception:
+                    INI_write()
+                    INI_read()
                                     
                 dAqON = True
                 runPS = True
